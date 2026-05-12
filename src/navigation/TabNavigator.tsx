@@ -8,13 +8,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import { HomeScreen } from '../screens/HomeScreen';
+import { SearchScreen } from '../screens/SearchScreen';
 import { ArchiveScreen } from '../screens/ArchiveScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 
-type Tab = 'home' | 'archive' | 'profile';
+type Tab = 'home' | 'search' | 'archive' | 'profile';
 
 const TABS: { key: Tab; label: string; emoji: string; activeColor: string }[] = [
   { key: 'home',    label: 'Bugün',  emoji: '☥', activeColor: Colors.gold },
+  { key: 'search',  label: 'Ara',    emoji: '⌕', activeColor: Colors.gold },
   { key: 'archive', label: 'Arşiv',  emoji: '📜', activeColor: Colors.purple },
   { key: 'profile', label: 'Profil', emoji: '🧭', activeColor: Colors.teal },
 ];
@@ -27,6 +29,8 @@ export function TabNavigator() {
     switch (activeTab) {
       case 'home':
         return <HomeScreen onNavigateToProfile={() => setActiveTab('profile')} />;
+      case 'search':
+        return <SearchScreen />;
       case 'archive':
         return <ArchiveScreen />;
       case 'profile':
