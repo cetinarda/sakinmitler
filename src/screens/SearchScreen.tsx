@@ -8,7 +8,6 @@ import {
   FlatList,
   ScrollView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
@@ -123,7 +122,6 @@ function searchableText(h: Hit): string {
 }
 
 export function SearchScreen() {
-  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -188,12 +186,7 @@ export function SearchScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Ara</Text>
-        <Text style={styles.subtitle}>Mit, arketip, imge — hepsi tek yerde</Text>
-      </View>
-
+    <View style={styles.container}>
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput
@@ -323,6 +316,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.cardBorder,
     paddingHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
     marginBottom: Spacing.md,
   },
   searchIcon: { fontSize: 18, color: Colors.gold, marginRight: Spacing.sm },
