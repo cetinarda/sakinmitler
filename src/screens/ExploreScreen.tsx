@@ -5,8 +5,9 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
+  SectionList,
   Modal,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
@@ -14,29 +15,54 @@ import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
 import imagesData from '../data/images.json';
 import { BulScreen } from './BulScreen';
-import { SearchScreen } from './SearchScreen';
 
-type SubTab = 'liste' | 'bul' | 'ara';
+type SubTab = 'liste' | 'bul';
 type Kind = 'archetype' | 'myth' | 'image';
 
-const SUB_TABS: { key: SubTab; label: string }[] = [
-  { key: 'liste', label: 'Liste' },
-  { key: 'bul',   label: 'Bul' },
-  { key: 'ara',   label: 'Ara' },
+const SUB_TABS: { key: SubTab; label: string; icon: string }[] = [
+  { key: 'liste', label: 'Liste', icon: '⊕' },
+  { key: 'bul',   label: 'Bul',   icon: '✦' },
 ];
+
+const KIND_COLOR: Record<Kind, string> = {
+  archetype: Colors.gold,
+  myth: Colors.purpleLight,
+  image: Colors.tealLight,
+};
+
+const KIND_LABEL: Record<Kind, string> = {
+  archetype: 'Arketip',
+  myth: 'Mit',
+  image: 'İmge',
+};
+
+const TOTAL_COUNT =
+  archetypesData.length + mythsData.length + imagesData.length;
 
 export function ExploreScreen() {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<SubTab>('bul');
+  const [tab, setTab] = useState<SubTab>('liste');
   const [detail, setDetail] = useState<{ kind: Kind; id: string } | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+
+  const onShowDetail = (kind: Kind, id: string) => setDetail({ kind, id });
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerSubtitle}>SAKİN · MİTLER</Text>
-        <Text style={styles.headerTitle}>
-          {tab === 'liste' ? 'Liste' : tab === 'bul' ? 'Bul' : 'Ara'}
-        </Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>
+            {tab === 'liste' ? 'Liste' : 'Bul'}
+          </Text>
+          <TouchableOpacity
+            style={styles.helpBadge}
+            onPress={() => setShowHelp(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.helpBadgeText}>?</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.subTabsRow}>
@@ -47,13 +73,13 @@ export function ExploreScreen() {
               key={t.key}
               style={[
                 styles.subTab,
-                active && { borderColor: Colors.gold, backgroundColor: Colors.goldGlow },
+                active && { borderColor: Colors.teal, backgroundColor: Colors.teal + '10' },
               ]}
               onPress={() => setTab(t.key)}
               activeOpacity={0.85}
             >
-              <Text style={[styles.subTabLabel, { color: active ? Colors.gold : Colors.textMuted }]}>
-                {t.key === 'bul' ? '✦ ' : ''}{t.label}
+              <Text style={[styles.subTabLabel, { color: active ? Colors.tealLight : Colors.textMuted }]}>
+                {t.icon}  {t.label}
               </Text>
             </TouchableOpacity>
           );
@@ -61,11 +87,8 @@ export function ExploreScreen() {
       </View>
 
       <View style={styles.content}>
-        {tab === 'liste' && <ListeView onShowDetail={(k, id) => setDetail({ kind: k, id })} />}
-        {tab === 'bul' && (
-          <BulScreen onShowDetail={(k, id) => setDetail({ kind: k, id })} />
-        )}
-        {tab === 'ara' && <SearchScreen />}
+        {tab === 'liste' && <ListeView onShowDetail={onShowDetail} />}
+        {tab === 'bul'   && <BulScreen onShowDetail={onShowDetail} />}
       </View>
 
       <Modal
@@ -76,37 +99,141 @@ export function ExploreScreen() {
       >
         {detail && <DetailModal kind={detail.kind} id={detail.id} onClose={() => setDetail(null)} />}
       </Modal>
+
+      <Modal
+        visible={showHelp}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowHelp(false)}
+      >
+        <View style={styles.helpBackdrop}>
+          <View style={styles.helpCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Nasıl Kullanılır?</Text>
+              <TouchableOpacity onPress={() => setShowHelp(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.helpLine}>
+              • <Text style={{ color: Colors.tealLight }}>Liste</Text> sekmesinde tüm
+              arketip, mit ve imgeleri alfabetik göz atabilir; üstteki kutucuktan isim,
+              sembol veya tema ile arayabilirsin.
+            </Text>
+            <Text style={styles.helpLine}>
+              • <Text style={{ color: Colors.gold }}>Bul</Text> sekmesinde sana eşlik
+              eden mitini iki yolla bulabilirsin: 7 soruluk karakter analizi veya
+              doğum tarihi/saati üzerinden natal eşleştirme.
+            </Text>
+            <Text style={styles.helpLine}>
+              • Her karta dokun → o sembolün özü, gölgesi, 🌙 rüyada ve ☀ gerçek
+              hayatta karşılığı açılır.
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-// ─── Liste sub-tab: filterable browse list ─────────────────────────────────────
+// ─── Liste sub-tab ─────────────────────────────────────────────────────────────
+function normalize(s: string): string {
+  return s
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .trim();
+}
+
+interface ListItem {
+  kind: Kind;
+  id: string;
+  name: string;
+  emoji: string;
+  tags: string;
+  fullText: string;
+}
+
+function buildListItems(): ListItem[] {
+  const arch: ListItem[] = archetypesData.map(a => ({
+    kind: 'archetype',
+    id: a.id,
+    name: a.name,
+    emoji: a.emoji,
+    tags: (a.keywords || []).slice(0, 3).join(' · '),
+    fullText: [
+      a.name, a.tradition, a.category, a.essence,
+      a.lightAspect, a.shadowAspect, a.dreamMeaning, a.wakingMeaning,
+      a.advice, a.affirmation, ...(a.keywords || []),
+    ].join(' '),
+  }));
+  const myth: ListItem[] = mythsData.map(m => ({
+    kind: 'myth',
+    id: m.id,
+    name: m.name,
+    emoji: m.emoji,
+    tags: [m.culture, m.element, m.category].filter(Boolean).join(' · '),
+    fullText: [
+      m.name, m.culture, m.era, m.category, m.summary,
+      m.depthMeaning, m.jungian, m.dreamMeaning, m.wakingMeaning, m.lesson,
+    ].join(' '),
+  }));
+  const img: ListItem[] = imagesData.map(i => ({
+    kind: 'image',
+    id: i.id,
+    name: i.name,
+    emoji: i.emoji,
+    tags: (i.keywords || []).slice(0, 3).join(' · '),
+    fullText: [
+      i.name, i.tradition, i.category, i.essence,
+      i.symbolism, i.dreamMeaning, i.wakingMeaning, i.advice,
+      ...(i.keywords || []),
+    ].join(' '),
+  }));
+  return [...arch, ...myth, ...img];
+}
+
+function firstLetter(name: string): string {
+  const first = name.trim().charAt(0).toLocaleUpperCase('tr-TR');
+  if (first === 'İ') return 'İ';
+  if (first === 'I') return 'I';
+  return first;
+}
+
 function ListeView({ onShowDetail }: { onShowDetail: (kind: Kind, id: string) => void }) {
   const [filter, setFilter] = useState<'all' | Kind>('all');
+  const [query, setQuery] = useState('');
+  const allItems = useMemo(() => buildListItems(), []);
 
-  const items = useMemo(() => {
-    const arch = archetypesData.map(a => ({
-      kind: 'archetype' as Kind,
-      id: a.id, name: a.name, emoji: a.emoji,
-      meta: `${a.tradition} · ${a.category}`,
-      preview: a.essence,
-    }));
-    const myth = mythsData.map(m => ({
-      kind: 'myth' as Kind,
-      id: m.id, name: m.name, emoji: m.emoji,
-      meta: `${m.culture} · ${m.era}`,
-      preview: m.summary,
-    }));
-    const img = imagesData.map(i => ({
-      kind: 'image' as Kind,
-      id: i.id, name: i.name, emoji: i.emoji,
-      meta: `${i.tradition} · ${i.category}`,
-      preview: i.essence,
-    }));
-    const all = [...arch, ...myth, ...img];
-    const filtered = filter === 'all' ? all : all.filter(x => x.kind === filter);
-    return filtered.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
-  }, [filter]);
+  const filtered = useMemo(() => {
+    const pool = filter === 'all' ? allItems : allItems.filter(x => x.kind === filter);
+    const q = normalize(query);
+    if (q.length === 0) return pool;
+
+    const terms = q.split(/\s+/).filter(Boolean);
+    return pool.filter(it => {
+      const nameN = normalize(it.name);
+      const fullN = normalize(it.fullText);
+      return terms.every(t => nameN.includes(t) || fullN.includes(t));
+    });
+  }, [filter, query, allItems]);
+
+  const sections = useMemo(() => {
+    const groups: Record<string, ListItem[]> = {};
+    for (const it of filtered) {
+      const k = firstLetter(it.name);
+      (groups[k] = groups[k] || []).push(it);
+    }
+    return Object.keys(groups)
+      .sort((a, b) => a.localeCompare(b, 'tr'))
+      .map(letter => ({
+        title: letter,
+        data: groups[letter].sort((a, b) => a.name.localeCompare(b.name, 'tr')),
+      }));
+  }, [filtered]);
 
   const FILTERS: { key: 'all' | Kind; label: string; color: string }[] = [
     { key: 'all',       label: 'Tümü',     color: Colors.gold },
@@ -116,60 +243,98 @@ function ListeView({ onShowDetail }: { onShowDetail: (kind: Kind, id: string) =>
   ];
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.filterRow}>
-        {FILTERS.map(f => (
+    <SectionList
+      sections={sections}
+      keyExtractor={item => `${item.kind}:${item.id}`}
+      stickySectionHeadersEnabled={false}
+      ListHeaderComponent={
+        <View style={ls.headerWrap}>
+          <Text style={ls.caption}>
+            Jung'dan kadim mitlere · {TOTAL_COUNT} kayıt
+          </Text>
+
+          <View style={ls.searchBox}>
+            <Text style={ls.searchIcon}>✦</Text>
+            <TextInput
+              style={ls.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="İsim, sembol veya unsur ile ara..."
+              placeholderTextColor={Colors.textMuted}
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="search"
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} style={ls.clearBtn}>
+                <Text style={ls.clearText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={ls.filterRow}>
+            {FILTERS.map(f => (
+              <TouchableOpacity
+                key={f.key}
+                style={[ls.filterBtn, filter === f.key && { borderColor: f.color }]}
+                onPress={() => setFilter(f.key)}
+              >
+                <Text style={[ls.filterLabel, { color: filter === f.key ? f.color : Colors.textMuted }]}>
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      }
+      renderSectionHeader={({ section }) => (
+        <View style={ls.sectionHeader}>
+          <View style={ls.sectionDot} />
+          <Text style={ls.sectionTitle}>{section.title}</Text>
+          <View style={ls.sectionLine} />
+        </View>
+      )}
+      renderItem={({ item, index, section }) => {
+        const color = KIND_COLOR[item.kind];
+        const isLast = index === section.data.length - 1;
+        return (
           <TouchableOpacity
-            key={f.key}
-            style={[styles.filterBtn, filter === f.key && { borderColor: f.color }]}
-            onPress={() => setFilter(f.key)}
+            style={[ls.row, !isLast && ls.rowDivider]}
+            onPress={() => onShowDetail(item.kind, item.id)}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.filterLabel, { color: filter === f.key ? f.color : Colors.textMuted }]}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <Text style={styles.countLine}>{items.length} kayıt</Text>
-      <FlatList
-        data={items}
-        keyExtractor={item => `${item.kind}:${item.id}`}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => {
-          const color =
-            item.kind === 'archetype' ? Colors.gold :
-            item.kind === 'myth'      ? Colors.purpleLight :
-                                        Colors.tealLight;
-          const kindLabel =
-            item.kind === 'archetype' ? 'Arketip' :
-            item.kind === 'myth'      ? 'Mit' : 'İmge';
-          return (
-            <TouchableOpacity
-              style={[styles.itemCard, { borderColor: color + '40' }]}
-              onPress={() => onShowDetail(item.kind, item.id)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.itemEmoji}>{item.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <View style={styles.itemTitleRow}>
-                  <Text style={[styles.itemName, { color }]} numberOfLines={1}>{item.name}</Text>
-                  <View style={[styles.kindPill, { borderColor: color }]}>
-                    <Text style={[styles.kindPillText, { color }]}>{kindLabel}</Text>
-                  </View>
+            <View style={[ls.avatar, { borderColor: color + '40' }]}>
+              <Text style={ls.avatarEmoji}>{item.emoji}</Text>
+            </View>
+            <View style={ls.rowText}>
+              <View style={ls.rowNameLine}>
+                <Text style={ls.rowName} numberOfLines={1}>{item.name}</Text>
+                <View style={[ls.kindChip, { borderColor: color + '50' }]}>
+                  <Text style={[ls.kindChipText, { color }]}>{KIND_LABEL[item.kind]}</Text>
                 </View>
-                <Text style={styles.itemMeta} numberOfLines={1}>{item.meta}</Text>
-                <Text style={styles.itemPreview} numberOfLines={2}>{item.preview}</Text>
               </View>
-            </TouchableOpacity>
-          );
-        }}
-      />
-    </View>
+              {!!item.tags && (
+                <Text style={ls.rowTags} numberOfLines={1}>{item.tags}</Text>
+              )}
+            </View>
+            <Text style={ls.rowArrow}>→</Text>
+          </TouchableOpacity>
+        );
+      }}
+      ListEmptyComponent={
+        <View style={ls.empty}>
+          <Text style={ls.emptyText}>Sonuç bulunamadı.</Text>
+          <Text style={ls.emptySubtext}>Farklı bir kelime dene.</Text>
+        </View>
+      }
+      contentContainerStyle={ls.listContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    />
   );
 }
 
-// ─── Detail modal: same shape as cards in HomeScreen ───────────────────────────
+// ─── Detail modal ──────────────────────────────────────────────────────────────
 function DetailModal({ kind, id, onClose }: { kind: Kind; id: string; onClose: () => void }) {
   const renderBody = () => {
     if (kind === 'archetype') {
@@ -266,7 +431,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xs,
+    paddingBottom: Spacing.sm,
   },
   headerSubtitle: {
     fontSize: 10,
@@ -274,12 +439,33 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     textTransform: 'uppercase',
   },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: 2,
+  },
   headerTitle: {
     fontSize: Typography.size.xxxl,
     color: Colors.textPrimary,
     fontWeight: Typography.weight.bold,
     letterSpacing: 0.5,
-    marginTop: 2,
+  },
+  helpBadge: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: Colors.ember,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  helpBadgeText: {
+    color: '#FFF',
+    fontWeight: Typography.weight.bold,
+    fontSize: Typography.size.sm,
   },
 
   subTabsRow: {
@@ -304,46 +490,6 @@ const styles = StyleSheet.create({
   },
 
   content: { flex: 1 },
-
-  // Liste
-  filterRow: { flexDirection: 'row', paddingHorizontal: Spacing.md, marginTop: Spacing.sm, gap: Spacing.xs },
-  filterBtn: {
-    flex: 1, paddingVertical: Spacing.sm, borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.backgroundSecondary, alignItems: 'center',
-    borderWidth: 1, borderColor: 'transparent',
-  },
-  filterLabel: { fontSize: Typography.size.xs, fontWeight: Typography.weight.medium },
-  countLine: {
-    fontSize: Typography.size.xs,
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
-  list: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xxxl },
-  itemCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    borderWidth: 1,
-  },
-  itemEmoji: { fontSize: 28 },
-  itemTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  itemName: { fontSize: Typography.size.md, fontWeight: Typography.weight.semibold, flexShrink: 1 },
-  kindPill: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: BorderRadius.round, borderWidth: 1 },
-  kindPillText: { fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontWeight: Typography.weight.semibold },
-  itemMeta: { fontSize: Typography.size.xs, color: Colors.textMuted, marginTop: 2 },
-  itemPreview: {
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    lineHeight: Typography.size.xs * 1.7,
-    marginTop: Spacing.xs,
-    fontWeight: Typography.weight.light,
-  },
 
   // Detail modal
   modalRoot: { flex: 1, backgroundColor: Colors.background },
@@ -378,8 +524,9 @@ const styles = StyleSheet.create({
     fontSize: Typography.size.xl,
     fontWeight: Typography.weight.bold,
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  detailMeta: { fontSize: Typography.size.xs, color: Colors.textMuted, marginTop: 4 },
+  detailMeta: { fontSize: Typography.size.xs, color: Colors.textMuted, marginTop: 4, textAlign: 'center' },
   detailDivider: { width: 28, height: 1, marginTop: Spacing.md },
 
   section: { marginBottom: Spacing.md },
@@ -419,5 +566,181 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: Typography.size.sm * 1.7,
     fontWeight: Typography.weight.light,
+  },
+
+  // Help overlay
+  helpBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    padding: Spacing.lg,
+  },
+  helpCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    paddingBottom: Spacing.lg,
+  },
+  helpLine: {
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    lineHeight: Typography.size.sm * 1.7,
+    fontWeight: Typography.weight.light,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
+});
+
+// Liste-specific styles
+const ls = StyleSheet.create({
+  listContent: {
+    paddingBottom: Spacing.xxxl,
+  },
+  headerWrap: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.md,
+  },
+  caption: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: Spacing.md,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.round,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    paddingHorizontal: Spacing.md,
+  },
+  searchIcon: {
+    fontSize: 14,
+    color: Colors.gold,
+    marginRight: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: Typography.size.sm,
+    color: Colors.textPrimary,
+    paddingVertical: Spacing.md - 2,
+  },
+  clearBtn: { padding: 4 },
+  clearText: { fontSize: 13, color: Colors.textMuted },
+  filterRow: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    marginTop: Spacing.md,
+  },
+  filterBtn: {
+    flex: 1,
+    paddingVertical: Spacing.sm - 2,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.backgroundSecondary,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  filterLabel: {
+    fontSize: Typography.size.xs,
+    fontWeight: Typography.weight.medium,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
+  },
+  sectionDot: {
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: Colors.tealLight,
+  },
+  sectionTitle: {
+    fontSize: Typography.size.md,
+    color: Colors.tealLight,
+    fontWeight: Typography.weight.semibold,
+    letterSpacing: 0.5,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.divider,
+    marginLeft: Spacing.sm,
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+  },
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  avatar: {
+    width: 52, height: 52, borderRadius: 26,
+    borderWidth: 1,
+    backgroundColor: Colors.backgroundCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: { fontSize: 26 },
+  rowText: { flex: 1, gap: 2 },
+  rowNameLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  rowName: {
+    fontSize: Typography.size.md,
+    color: Colors.textPrimary,
+    fontWeight: Typography.weight.semibold,
+    letterSpacing: 0.3,
+    flexShrink: 1,
+  },
+  kindChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.round,
+    borderWidth: 1,
+  },
+  kindChipText: {
+    fontSize: 9,
+    letterSpacing: 1,
+    fontWeight: Typography.weight.semibold,
+    textTransform: 'uppercase',
+  },
+  rowTags: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
+  },
+  rowArrow: {
+    fontSize: 18,
+    color: Colors.textMuted,
+  },
+
+  empty: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xxl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  emptyText: {
+    fontSize: Typography.size.md,
+    color: Colors.textPrimary,
+    fontWeight: Typography.weight.medium,
+  },
+  emptySubtext: {
+    fontSize: Typography.size.sm,
+    color: Colors.textMuted,
   },
 });

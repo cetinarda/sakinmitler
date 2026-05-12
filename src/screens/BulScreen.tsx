@@ -21,7 +21,7 @@ interface BulScreenProps {
   onShowDetail: (kind: 'archetype' | 'myth' | 'image', id: string) => void;
 }
 
-type Mode = 'home' | 'questions' | 'natal' | 'help';
+type Mode = 'home' | 'questions' | 'natal';
 
 export function BulScreen({ onShowDetail }: BulScreenProps) {
   const [mode, setMode] = useState<Mode>('home');
@@ -59,23 +59,6 @@ export function BulScreen({ onShowDetail }: BulScreenProps) {
           }}
         />
       </Modal>
-
-      <Modal
-        visible={mode === 'help'}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setMode('home')}
-      >
-        <HelpOverlay onClose={() => setMode('home')} />
-      </Modal>
-
-      <TouchableOpacity
-        style={styles.helpFab}
-        onPress={() => setMode('help')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.helpFabText}>?</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -430,36 +413,6 @@ function NatalRow({
   );
 }
 
-// ─── Help overlay ───────────────────────────────────────────────────────────────
-function HelpOverlay({ onClose }: { onClose: () => void }) {
-  return (
-    <View style={styles.helpBackdrop}>
-      <View style={styles.helpCard}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Bul Nasıl Çalışır?</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.modalClose}>✕</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.helpLine}>
-          • <Text style={{ color: Colors.tealLight }}>Sorularla Keşfet</Text> 7 kısa
-          sorudan oluşur. Verdiğin yanıtlar arketip skorları biriktirir; en yüksek
-          puanlı arketip sana eşlik eden olarak önerilir.
-        </Text>
-        <Text style={styles.helpLine}>
-          • <Text style={{ color: Colors.gold }}>Doğum Bilgilerimle Bul</Text> doğum
-          tarihinden Hayat Yolu sayını hesaplar; saat verirsen eşleşmeyi inceltir
-          ve sana üçlü öneri sunar (arketip + mit + sembol).
-        </Text>
-        <Text style={styles.helpLine}>
-          • Sonuçlar yargılayıcı değil, çağırıcıdır. Bir gün başka bir arketip seni
-          çağırabilir; bu doğal bir akıştır.
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
 
@@ -528,26 +481,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 4,
     letterSpacing: 0.3,
-  },
-
-  helpFab: {
-    position: 'absolute',
-    right: Spacing.lg,
-    bottom: Spacing.lg,
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.ember,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  helpFabText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: Typography.weight.bold,
   },
 
   // Modal common
@@ -776,27 +709,4 @@ const styles = StyleSheet.create({
   },
   natalRowMeta: { fontSize: Typography.size.xs, color: Colors.textMuted },
   natalArrow: { fontSize: 20 },
-
-  // Help
-  helpBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    padding: Spacing.lg,
-  },
-  helpCard: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-    paddingBottom: Spacing.lg,
-  },
-  helpLine: {
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    lineHeight: Typography.size.sm * 1.7,
-    fontWeight: Typography.weight.light,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-  },
 });
