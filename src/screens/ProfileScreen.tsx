@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import { useMitlerStore } from '../store/useStore';
 import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
 import imagesData from '../data/images.json';
+import { calcNumerology, LIFE_PATH_MEANINGS } from '../utils/numerology';
+import { getHDProfile } from '../utils/humanDesign';
+import { getWeeklyReading } from '../utils/weeklyReading';
 
 const ELEMENTS = ['ateş', 'su', 'toprak', 'hava'] as const;
 const ELEMENT_EMOJIS: Record<string, string> = {
@@ -30,12 +33,25 @@ const BADGES = [
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, isNewUser, createProfile, stats, getTopStat, getLevelTitle } = useMitlerStore();
+  const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitle } = useMitlerStore();
 
   const [showOnboarding, setShowOnboarding] = useState(isNewUser);
   const [name, setName] = useState('');
   const [element, setElement] = useState<typeof ELEMENTS[number]>('ateş');
   const [step, setStep] = useState(1);
+
+  // step 3 birth data
+  const [fullName, setFullName] = useState('');
+  const [birthDay, setBirthDay] = useState('');
+  const [birthMonth, setBirthMonth] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+
+  // inline birth data edit (when already profiled but no birth data)
+  const [showBirthForm, setShowBirthForm] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editDay, setEditDay] = useState('');
+  const [editMonth, setEditMonth] = useState('');
+  const [editYear, setEditYear] = useState('');
 
   const topArchetypeId = getTopStat(stats.archetypeCounts);
   const topMythId      = getTopStat(stats.mythCounts);
@@ -57,18 +73,63 @@ export function ProfileScreen() {
     return Math.min(Math.max((totalReadings - currentAt) / (nextAt - currentAt), 0), 1);
   };
 
+  const analysis = useMemo(() => {
+    if (!profile?.fullName || !profile?.birthDate) return null;
+    try {
+      const nums   = calcNumerology(profile.fullName, profile.birthDate);
+      const hd     = getHDProfile(profile.birthDate);
+      const weekly = getWeeklyReading(nums);
+      const lp     = LIFE_PATH_MEANINGS[nums.lifePath];
+      return { nums, hd, weekly, lp };
+    } catch {
+      return null;
+    }
+  }, [profile?.fullName, profile?.birthDate]);
+
+  const formatBirthDate = (d: string, m: string, y: string) => {
+    const dd = d.padStart(2, '0');
+    const mm = m.padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  };
+
+  const birthDataValid = (d: string, m: string, y: string) =>
+    parseInt(d) >= 1 && parseInt(d) <= 31 &&
+    parseInt(m) >= 1 && parseInt(m) <= 12 &&
+    parseInt(y) >= 1900 && parseInt(y) <= new Date().getFullYear();
+
   const handleOnboarding = async () => {
     if (step === 1 && name.trim().length > 0) {
       setStep(2);
     } else if (step === 2) {
-      await createProfile(name.trim(), element);
+      setStep(3);
+    } else if (step === 3) {
+      const bd = birthDataValid(birthDay, birthMonth, birthYear)
+        ? formatBirthDate(birthDay, birthMonth, birthYear)
+        : undefined;
+      await createProfile(name.trim(), element, bd, fullName.trim() || undefined);
       setShowOnboarding(false);
     }
   };
 
+  const handleSkipBirth = async () => {
+    await createProfile(name.trim(), element);
+    setShowOnboarding(false);
+  };
+
+  const handleSaveBirthData = async () => {
+    if (!birthDataValid(editDay, editMonth, editYear)) return;
+    const bd = formatBirthDate(editDay, editMonth, editYear);
+    await updateBirthData(editFullName.trim(), bd);
+    setShowBirthForm(false);
+  };
+
   if (showOnboarding || isNewUser) {
     return (
-      <View style={[styles.container, styles.onboarding, { paddingTop: insets.top }]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.onboarding, { paddingTop: insets.top + Spacing.lg }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.onboardingEmoji}>☥</Text>
         <Text style={styles.onboardingTitle}>SAKİN MİTLER</Text>
         <Text style={styles.onboardingSubtitle}>
@@ -110,16 +171,69 @@ export function ProfileScreen() {
           </>
         )}
 
+        {step === 3 && (
+          <>
+            <Text style={styles.onboardingQuestion}>Derin analiz için</Text>
+            <Text style={styles.onboardingHint}>
+              İsim analizi, numaroloji ve haftalık mit haritası için.{'\n'}
+              İstersen atlayabilirsin.
+            </Text>
+            <TextInput
+              style={styles.nameInput}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="İsim Soyisim..."
+              placeholderTextColor={Colors.textMuted}
+              autoCapitalize="words"
+            />
+            <View style={styles.dateRow}>
+              <TextInput
+                style={[styles.dateInput, { flex: 1 }]}
+                value={birthDay}
+                onChangeText={setBirthDay}
+                placeholder="Gün"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+              <TextInput
+                style={[styles.dateInput, { flex: 1 }]}
+                value={birthMonth}
+                onChangeText={setBirthMonth}
+                placeholder="Ay"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+              <TextInput
+                style={[styles.dateInput, { flex: 2 }]}
+                value={birthYear}
+                onChangeText={setBirthYear}
+                placeholder="Yıl"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={4}
+              />
+            </View>
+          </>
+        )}
+
         <TouchableOpacity
           style={[styles.onboardingBtn, { opacity: step === 1 && name.trim().length === 0 ? 0.4 : 1 }]}
           onPress={handleOnboarding}
           disabled={step === 1 && name.trim().length === 0}
         >
           <Text style={styles.onboardingBtnText}>
-            {step === 1 ? 'Devam Et →' : 'Yola Çık ✦'}
+            {step === 1 ? 'Devam Et →' : step === 2 ? 'Devam Et →' : 'Yola Çık ✦'}
           </Text>
         </TouchableOpacity>
-      </View>
+
+        {step === 3 && (
+          <TouchableOpacity onPress={handleSkipBirth} style={styles.skipBtn}>
+            <Text style={styles.skipText}>Şimdi değil, atla</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
     );
   }
 
@@ -170,6 +284,162 @@ export function ProfileScreen() {
         <Text style={styles.progressText}>{totalReadings} / {level * 7} okuma</Text>
       </View>
 
+      {/* Kişisel Harita */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Kişisel Harita</Text>
+
+        {analysis ? (
+          <>
+            {/* Life Path */}
+            <View style={[styles.analysisCard, { borderColor: Colors.gold + '60' }]}>
+              <View style={styles.analysisHeader}>
+                <View style={[styles.analysisBadge, { backgroundColor: Colors.goldGlow }]}>
+                  <Text style={[styles.analysisBadgeNum, { color: Colors.gold }]}>
+                    {analysis.nums.lifePath}
+                  </Text>
+                </View>
+                <View style={styles.analysisHeaderText}>
+                  <Text style={[styles.analysisTitle, { color: Colors.gold }]}>
+                    {analysis.lp.title}
+                  </Text>
+                  <Text style={styles.analysisMeta}>
+                    Hayat Yolu · {analysis.lp.keyword}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.analysisDesc}>{analysis.lp.desc}</Text>
+              <View style={styles.subNums}>
+                <View style={styles.subNum}>
+                  <Text style={[styles.subNumVal, { color: Colors.goldLight }]}>{analysis.nums.expression}</Text>
+                  <Text style={styles.subNumLabel}>İfade</Text>
+                </View>
+                <View style={styles.subNum}>
+                  <Text style={[styles.subNumVal, { color: Colors.goldLight }]}>{analysis.nums.soulUrge}</Text>
+                  <Text style={styles.subNumLabel}>Ruh İsteği</Text>
+                </View>
+                <View style={styles.subNum}>
+                  <Text style={[styles.subNumVal, { color: Colors.goldLight }]}>{analysis.nums.personality}</Text>
+                  <Text style={styles.subNumLabel}>Kişilik</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Human Design */}
+            <View style={[styles.analysisCard, { borderColor: Colors.purple + '60' }]}>
+              <View style={styles.analysisHeader}>
+                <View style={[styles.analysisBadge, { backgroundColor: Colors.purple + '20' }]}>
+                  <Text style={{ fontSize: 18 }}>◈</Text>
+                </View>
+                <View style={styles.analysisHeaderText}>
+                  <Text style={[styles.analysisTitle, { color: Colors.purpleLight }]}>
+                    {analysis.hd.type}
+                  </Text>
+                  <Text style={styles.analysisMeta}>
+                    Human Design · Strateji: {analysis.hd.strategy}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.analysisDesc}>{analysis.hd.desc}</Text>
+              <View style={[styles.notSelfBox, { borderColor: Colors.purple + '30' }]}>
+                <Text style={[styles.notSelfLabel, { color: Colors.purple }]}>Not-Self Tema</Text>
+                <Text style={styles.notSelfText}>{analysis.hd.notSelf}</Text>
+              </View>
+            </View>
+
+            {/* Weekly Reading */}
+            <View style={[styles.analysisCard, { borderColor: Colors.teal + '60' }]}>
+              <View style={styles.analysisHeader}>
+                <View style={[styles.analysisBadge, { backgroundColor: Colors.teal + '20' }]}>
+                  <Text style={{ fontSize: 18 }}>◎</Text>
+                </View>
+                <View style={styles.analysisHeaderText}>
+                  <Text style={[styles.analysisTitle, { color: Colors.tealLight }]}>
+                    {analysis.weekly.theme}
+                  </Text>
+                  <Text style={styles.analysisMeta}>
+                    Haftalık Rehberlik · {analysis.weekly.weekNumber}. hafta
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.analysisDesc}>{analysis.weekly.message}</Text>
+              <Text style={[styles.analysisMeta, { marginTop: Spacing.xs }]}>
+                Kişisel yıl: {analysis.weekly.personalYear}
+              </Text>
+            </View>
+          </>
+        ) : showBirthForm ? (
+          <View style={styles.birthForm}>
+            <Text style={styles.birthFormTitle}>İsim ve doğum bilgilerini gir</Text>
+            <TextInput
+              style={styles.nameInput}
+              value={editFullName}
+              onChangeText={setEditFullName}
+              placeholder="İsim Soyisim..."
+              placeholderTextColor={Colors.textMuted}
+              autoCapitalize="words"
+            />
+            <View style={styles.dateRow}>
+              <TextInput
+                style={[styles.dateInput, { flex: 1 }]}
+                value={editDay}
+                onChangeText={setEditDay}
+                placeholder="Gün"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+              <TextInput
+                style={[styles.dateInput, { flex: 1 }]}
+                value={editMonth}
+                onChangeText={setEditMonth}
+                placeholder="Ay"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+              <TextInput
+                style={[styles.dateInput, { flex: 2 }]}
+                value={editYear}
+                onChangeText={setEditYear}
+                placeholder="Yıl"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={4}
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.onboardingBtn, {
+                opacity: editFullName.trim().length > 0 && birthDataValid(editDay, editMonth, editYear) ? 1 : 0.4
+              }]}
+              onPress={handleSaveBirthData}
+              disabled={editFullName.trim().length === 0 || !birthDataValid(editDay, editMonth, editYear)}
+            >
+              <Text style={styles.onboardingBtnText}>Haritamı Oluştur ✦</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowBirthForm(false)} style={styles.skipBtn}>
+              <Text style={styles.skipText}>İptal</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.unlockBtn}
+            onPress={() => {
+              setEditFullName('');
+              setEditDay(''); setEditMonth(''); setEditYear('');
+              setShowBirthForm(true);
+            }}
+          >
+            <Text style={styles.unlockIcon}>✦</Text>
+            <Text style={styles.unlockTitle}>Kişisel Haritanı Aç</Text>
+            <Text style={styles.unlockDesc}>
+              İsim soyisim ve doğum tarihini gir.{'\n'}
+              Numaroloji, Human Design ve haftalık analiz.
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Mit Haritan */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Mit Haritan</Text>
 
@@ -224,11 +494,12 @@ export function ProfileScreen() {
           <Text style={styles.howLine}>• Her gün üç deste açılır: <Text style={{ color: Colors.gold }}>Arketipler</Text>, <Text style={{ color: Colors.purpleLight }}>Mitler</Text>, <Text style={{ color: Colors.tealLight }}>İmgeler</Text>.</Text>
           <Text style={styles.howLine}>• Her karttaki <Text style={{ color: Colors.purpleLight }}>🌙 Rüyada</Text> bölümü, sembol rüyanda görünürse ne anlama gelebileceğini açıklar.</Text>
           <Text style={styles.howLine}>• <Text style={{ color: Colors.tealLight }}>☀ Gerçek Hayatta</Text> bölümü ise sembolün uyanıkken karşına çıkışında ne söylediğini anlatır.</Text>
-          <Text style={styles.howLine}>• Açıklamalar Jung, Campbell, Pearson ve halk gelenekleri ışığında hazırlandı — psikolojik rehberlik niyetiyle.</Text>
+          <Text style={styles.howLine}>• <Text style={{ color: Colors.gold }}>Ara</Text> sekmesinden istediğin mit, arketip veya imgeyi aratabilirsin.</Text>
           <Text style={styles.howLine}>• Sallayarak veya dokunarak kart açabilirsin.</Text>
         </View>
       </View>
 
+      {/* Rozetler */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Rozetler</Text>
         <View style={styles.badgesGrid}>
@@ -263,9 +534,9 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: Spacing.xxxl },
   onboarding: {
     alignItems: 'center',
-    justifyContent: 'center',
     padding: Spacing.xl,
     gap: Spacing.md,
+    paddingBottom: Spacing.xxxl,
   },
   onboardingEmoji: { fontSize: 56, marginBottom: Spacing.sm, color: Colors.gold },
   onboardingTitle: {
@@ -279,6 +550,13 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: Typography.size.sm * 1.6,
+  },
+  onboardingHint: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: Typography.size.xs * 1.7,
+    marginBottom: Spacing.xs,
   },
   onboardingQuestion: {
     fontSize: Typography.size.lg,
@@ -295,6 +573,21 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: Colors.backgroundCard,
     width: '100%',
+    textAlign: 'center',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    width: '100%',
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: Typography.size.md,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.backgroundCard,
     textAlign: 'center',
   },
   elementsGrid: {
@@ -335,6 +628,12 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weight.bold,
     color: '#1A1208',
     letterSpacing: 1,
+  },
+  skipBtn: { paddingVertical: Spacing.sm },
+  skipText: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
   },
 
   hero: { alignItems: 'center', paddingVertical: Spacing.xl },
@@ -411,6 +710,113 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', backgroundColor: Colors.gold, borderRadius: BorderRadius.round },
   progressText: { fontSize: Typography.size.xs, color: Colors.textMuted },
+
+  // Analysis cards
+  analysisCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  analysisHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  analysisBadge: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  analysisBadgeNum: {
+    fontSize: Typography.size.xl,
+    fontWeight: Typography.weight.bold,
+  },
+  analysisHeaderText: { flex: 1 },
+  analysisTitle: {
+    fontSize: Typography.size.md,
+    fontWeight: Typography.weight.semibold,
+    letterSpacing: 0.5,
+  },
+  analysisMeta: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
+  analysisDesc: {
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    lineHeight: Typography.size.sm * 1.8,
+    fontWeight: Typography.weight.light,
+  },
+  subNums: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  subNum: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: Spacing.sm,
+  },
+  subNumVal: {
+    fontSize: Typography.size.lg,
+    fontWeight: Typography.weight.bold,
+  },
+  subNumLabel: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  notSelfBox: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  notSelfLabel: {
+    fontSize: Typography.size.xs,
+    fontWeight: Typography.weight.semibold,
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  notSelfText: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    lineHeight: Typography.size.xs * 1.7,
+  },
+
+  unlockBtn: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  unlockIcon: { fontSize: 28, color: Colors.gold, opacity: 0.7 },
+  unlockTitle: {
+    fontSize: Typography.size.md,
+    fontWeight: Typography.weight.semibold,
+    color: Colors.gold,
+    letterSpacing: 0.5,
+  },
+  unlockDesc: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: Typography.size.xs * 1.7,
+  },
+
+  birthForm: { gap: Spacing.sm },
+  birthFormTitle: {
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
 
   spiritCard: {
     flexDirection: 'row',
