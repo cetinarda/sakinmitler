@@ -74,9 +74,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    overflow: 'hidden',
   },
   screen: {
     flex: 1,
+    overflow: 'hidden',
   },
   tabBar: {
     flexDirection: 'row',
@@ -84,6 +86,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.divider,
     paddingTop: Spacing.sm,
+    flexShrink: 0,
   },
   tabItem: {
     flex: 1,
