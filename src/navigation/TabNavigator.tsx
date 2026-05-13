@@ -4,21 +4,23 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import { HomeScreen } from '../screens/HomeScreen';
-import { ExploreScreen } from '../screens/ExploreScreen';
+import { MitlerHubScreen } from '../screens/MitlerHubScreen';
 import { ArchiveScreen } from '../screens/ArchiveScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { GlossaryFAB } from '../components/HelpButton';
 
-type Tab = 'home' | 'explore' | 'archive' | 'profile';
+type Tab = 'home' | 'mitler' | 'archive' | 'profile';
 
-const TABS: { key: Tab; label: string; emoji: string; activeColor: string }[] = [
-  { key: 'home',    label: 'Bugün',  emoji: '☥',  activeColor: Colors.gold },
-  { key: 'explore', label: 'Mitler', emoji: '✦',  activeColor: Colors.gold },
-  { key: 'archive', label: 'Arşiv',  emoji: '📜', activeColor: Colors.purple },
-  { key: 'profile', label: 'Profil', emoji: '🧭', activeColor: Colors.teal },
+const TABS: { key: Tab; label: string; symbol: string; activeColor: string }[] = [
+  { key: 'home',    label: 'Bugün',   symbol: '✦',  activeColor: Colors.gold },
+  { key: 'mitler',  label: 'Mitler',  symbol: '⊕',  activeColor: Colors.tealLight },
+  { key: 'archive', label: 'Arşiv',   symbol: '◈',  activeColor: Colors.purple },
+  { key: 'profile', label: 'Profil',  symbol: '⊙',  activeColor: Colors.sakinLavender },
 ];
 
 export function TabNavigator() {
@@ -29,8 +31,8 @@ export function TabNavigator() {
     switch (activeTab) {
       case 'home':
         return <HomeScreen onNavigateToProfile={() => setActiveTab('profile')} />;
-      case 'explore':
-        return <ExploreScreen />;
+      case 'mitler':
+        return <MitlerHubScreen />;
       case 'archive':
         return <ArchiveScreen />;
       case 'profile':
@@ -39,46 +41,71 @@ export function TabNavigator() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.screen}>{renderScreen()}</View>
+    <View style={styles.webRoot}>
+      <View style={styles.container}>
+        <View style={styles.screen}>{renderScreen()}</View>
 
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4 }]}>
-        {TABS.map(tab => {
-          const isActive = activeTab === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={styles.tabItem}
-              onPress={() => setActiveTab(tab.key)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.tabIndicator, isActive && { backgroundColor: tab.activeColor }]} />
-              <Text style={[styles.tabEmoji, !isActive && styles.tabEmojiInactive]}>
-                {tab.emoji}
-              </Text>
-              <Text style={[
-                styles.tabLabel,
-                { color: isActive ? tab.activeColor : Colors.textMuted }
-              ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        <GlossaryFAB />
+
+        <View style={[
+          styles.tabBar,
+          { paddingBottom: insets.bottom + 4 },
+          Platform.OS === 'web' && styles.tabBarWeb,
+        ]}>
+          {TABS.map(tab => {
+            const isActive = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={styles.tabItem}
+                onPress={() => setActiveTab(tab.key)}
+                activeOpacity={0.7}
+                accessibilityRole="tab"
+                accessibilityLabel={tab.label}
+                accessibilityState={{ selected: isActive }}
+              >
+                <View style={[styles.tabIndicator, isActive && { backgroundColor: tab.activeColor }]} />
+                <Text style={[
+                  styles.tabSymbol,
+                  { color: isActive ? tab.activeColor : Colors.textMuted },
+                  !isActive && styles.tabSymbolInactive,
+                ]}>
+                  {tab.symbol}
+                </Text>
+                <Text style={[
+                  styles.tabLabel,
+                  { color: isActive ? tab.activeColor : Colors.textMuted },
+                ]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
 }
 
+const MAX_W = 480;
+
 const styles = StyleSheet.create({
+  webRoot: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? '#070510' : Colors.background,
+    alignItems: Platform.OS === 'web' ? 'center' : undefined,
+    ...(Platform.OS === 'web' ? { height: '100vh' as any, overflow: 'hidden' as any } : {}),
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    overflow: 'hidden',
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? MAX_W : undefined,
+    ...(Platform.OS === 'web' ? { overflow: 'hidden' as any } : {}),
   },
   screen: {
     flex: 1,
-    overflow: 'hidden',
+    overflow: 'hidden' as any,
   },
   tabBar: {
     flexDirection: 'row',
@@ -86,7 +113,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.divider,
     paddingTop: Spacing.sm,
-    flexShrink: 0,
+  },
+  tabBarWeb: {
+    position: 'sticky' as any,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
   tabItem: {
     flex: 1,
@@ -102,12 +135,14 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.round,
     backgroundColor: 'transparent',
   },
-  tabEmoji: {
-    fontSize: 22,
+  tabSymbol: {
+    fontSize: 18,
+    lineHeight: 24,
     marginBottom: 2,
+    fontWeight: '300',
   },
-  tabEmojiInactive: {
-    opacity: 0.5,
+  tabSymbolInactive: {
+    opacity: 0.35,
   },
   tabLabel: {
     fontSize: Typography.size.xs,

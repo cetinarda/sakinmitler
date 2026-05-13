@@ -49,6 +49,17 @@ export const Colors = {
   tabArchetype: '#C9A84C',
   tabMyth: '#7B4FA6',
   tabImage: '#2E9E8A',
+
+  // Sakin ailesi paleti
+  sakinNight: '#2E2540',
+  sakinPlum: '#4A3A6B',
+  sakinLavender: '#8A7FA8',
+  sakinMoonstone: '#C5B8D4',
+  sakinCream: '#FAF6EF',
+  sakinSand: '#F0E9DC',
+  sakinGold: '#C9A14A',
+  sakinTerra: '#C97B5F',
+  sakinMint: '#7A9B8E',
 } as const;
 
 export const Gradients = {
