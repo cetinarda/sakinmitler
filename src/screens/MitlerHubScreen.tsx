@@ -13,21 +13,23 @@ import { MitlerLibraryScreen } from './MitlerLibraryScreen';
 import { MitlerFinderScreen } from './MitlerFinderScreen';
 import { WeeklyScreen } from './WeeklyScreen';
 import { useMitlerStore } from '../store/useStore';
+import { useLanguage } from '../i18n/useLanguage';
 
 type Panel = 'library' | 'finder' | 'weekly';
 
-const PANELS = [
-  { key: 'library' as Panel, title: 'Mitler', symbol: '⊕', color: Colors.tealLight,    helpKey: 'arketip' },
-  { key: 'finder'  as Panel, title: 'Bul',    symbol: '✦', color: Colors.gold,         helpKey: 'bul' },
-  { key: 'weekly'  as Panel, title: 'Hafta',  symbol: '◈', color: Colors.sakinLavender, helpKey: 'hafta' },
+const PANEL_CONFIG = [
+  { key: 'library' as Panel, tKey: 'hub.panel.library' as const, symbol: '⊕', color: Colors.tealLight,    helpKey: 'arketip' },
+  { key: 'finder'  as Panel, tKey: 'hub.panel.finder'  as const, symbol: '✦', color: Colors.gold,         helpKey: 'bul' },
+  { key: 'weekly'  as Panel, tKey: 'hub.panel.weekly'  as const, symbol: '◈', color: Colors.sakinLavender, helpKey: 'hafta' },
 ];
 
 export function MitlerHubScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const { profile } = useMitlerStore();
   const [panel, setPanel] = useState<Panel>('library');
 
-  const active = PANELS.find(p => p.key === panel)!;
+  const active = PANEL_CONFIG.find(p => p.key === panel)!;
   const noClose = () => {};
 
   return (
@@ -35,15 +37,15 @@ export function MitlerHubScreen() {
       <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
 
       <View style={styles.headerBar}>
-        <Text style={styles.eyebrow}>SAKİN · MİTLER</Text>
+        <Text style={styles.eyebrow}>{t('hub.eyebrow')}</Text>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{active.title}</Text>
+          <Text style={styles.title}>{t(active.tKey)}</Text>
           <HelpButton termKey={active.helpKey} />
         </View>
       </View>
 
       <View style={styles.chipWrap}>
-        {PANELS.map(p => {
+        {PANEL_CONFIG.map(p => {
           const isActive = p.key === panel;
           return (
             <TouchableOpacity
@@ -63,7 +65,7 @@ export function MitlerHubScreen() {
                 { color: isActive ? p.color : Colors.textMuted },
                 isActive && { fontWeight: Typography.weight.semibold },
               ]}>
-                {p.title}
+                {t(p.tKey)}
               </Text>
             </TouchableOpacity>
           );
