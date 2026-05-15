@@ -676,8 +676,10 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', gap: Spacing.sm },
   dateInput: {
     borderWidth: 1, borderColor: Colors.cardBorder, borderRadius: BorderRadius.md,
-    padding: Spacing.md, fontSize: Typography.size.lg, color: Colors.textPrimary,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
+    fontSize: Typography.size.md, color: Colors.textPrimary,
     backgroundColor: Colors.backgroundCard, textAlign: 'center',
+    minWidth: 0,
   },
   birthHint: {
     fontSize: Typography.size.xs, color: Colors.textMuted,
