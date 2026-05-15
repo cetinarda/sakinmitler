@@ -9,12 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
-import archetypesData from '../data/archetypes.json';
-import mythsData from '../data/myths.json';
-import imagesData from '../data/images.json';
-import tarotData from '../data/tarot.json';
-import runesData from '../data/runes.json';
-import ichingData from '../data/iching.json';
+import { useData } from '../data/loader';
 import { MitlerDetailScreen, MitlerEntry, Kind, KIND_COLOR, KIND_LABEL } from './MitlerDetailScreen';
 import { useLanguage } from '../i18n/useLanguage';
 
@@ -44,11 +39,7 @@ const FILTERS: { key: Filter; tKey: FilterTKey }[] = [
   { key: 'iching',    tKey: 'library.filter.iching' },
 ];
 
-const TOTAL =
-  archetypesData.length + mythsData.length + imagesData.length +
-  tarotData.length + runesData.length + ichingData.length;
-
-function archetypeEntry(a: typeof archetypesData[0]): MitlerEntry {
+function archetypeEntry(a: any): MitlerEntry {
   return {
     kind: 'archetype',
     id: a.id,
@@ -60,7 +51,7 @@ function archetypeEntry(a: typeof archetypesData[0]): MitlerEntry {
     data: a,
   };
 }
-function mythEntry(m: typeof mythsData[0]): MitlerEntry {
+function mythEntry(m: any): MitlerEntry {
   return {
     kind: 'myth',
     id: m.id,
@@ -72,7 +63,7 @@ function mythEntry(m: typeof mythsData[0]): MitlerEntry {
     data: m,
   };
 }
-function imageEntry(i: typeof imagesData[0]): MitlerEntry {
+function imageEntry(i: any): MitlerEntry {
   return {
     kind: 'image',
     id: i.id,
@@ -84,7 +75,7 @@ function imageEntry(i: typeof imagesData[0]): MitlerEntry {
     data: i,
   };
 }
-function tarotEntry(t: typeof tarotData[0]): MitlerEntry {
+function tarotEntry(t: any): MitlerEntry {
   const arcanaLabel =
     t.arcana === 'major' ? `Major ${t.number}` :
     t.arcana === 'minor' ? `${t.suit} ${t.number}` :
@@ -100,7 +91,7 @@ function tarotEntry(t: typeof tarotData[0]): MitlerEntry {
     data: t,
   };
 }
-function runeEntry(r: typeof runesData[0]): MitlerEntry {
+function runeEntry(r: any): MitlerEntry {
   return {
     kind: 'rune',
     id: r.id,
@@ -112,7 +103,7 @@ function runeEntry(r: typeof runesData[0]): MitlerEntry {
     data: r,
   };
 }
-function ichingEntry(ic: typeof ichingData[0]): MitlerEntry {
+function ichingEntry(ic: any): MitlerEntry {
   return {
     kind: 'iching',
     id: ic.id,
@@ -125,14 +116,14 @@ function ichingEntry(ic: typeof ichingData[0]): MitlerEntry {
   };
 }
 
-function buildEntries(): MitlerEntry[] {
+function buildEntries(data: ReturnType<typeof useData>): MitlerEntry[] {
   return [
-    ...archetypesData.map(archetypeEntry),
-    ...mythsData.map(mythEntry),
-    ...imagesData.map(imageEntry),
-    ...tarotData.map(tarotEntry),
-    ...runesData.map(runeEntry),
-    ...ichingData.map(ichingEntry),
+    ...data.archetypes.map(archetypeEntry),
+    ...data.myths.map(mythEntry),
+    ...data.images.map(imageEntry),
+    ...data.tarot.map(tarotEntry),
+    ...data.runes.map(runeEntry),
+    ...data.iching.map(ichingEntry),
   ];
 }
 
@@ -151,11 +142,15 @@ function normalize(s: string): string {
 export function MitlerLibraryScreen({ onClose, embedded }: Props) {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const data = useData();
+  const TOTAL =
+    data.archetypes.length + data.myths.length + data.images.length +
+    data.tarot.length + data.runes.length + data.iching.length;
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [selected, setSelected] = useState<MitlerEntry | null>(null);
 
-  const all = useMemo(() => buildEntries(), []);
+  const all = useMemo(() => buildEntries(data), [data]);
 
   const filtered = useMemo(() => {
     const pool = filter === 'all' ? all : all.filter(e => e.kind === filter);

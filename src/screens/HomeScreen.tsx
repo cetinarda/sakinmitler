@@ -12,9 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
-import archetypesData from '../data/archetypes.json';
-import mythsData from '../data/myths.json';
-import imagesData from '../data/images.json';
+import { useData } from '../data/loader';
 import { useMitlerStore } from '../store/useStore';
 import { useLanguage } from '../i18n/useLanguage';
 
@@ -188,6 +186,7 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const { profile, dailyReading, generateDailyReading, updateStats } = useMitlerStore();
   const { t } = useLanguage();
+  const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
 
   const [reading, setReading] = useState(dailyReading);
   const [step, setStep]       = useState(0);
