@@ -224,6 +224,12 @@ export function useMitlerStore() {
     return entries.reduce((a, b) => a[1] > b[1] ? a : b)[0];
   }, []);
 
+  // Returns the translation key for the level title; the consumer translates.
+  const getLevelTitleKey = useCallback((level: number): string => {
+    const idx = Math.min(Math.max(level, 1), 7);
+    return `profile.level.${idx}`;
+  }, []);
+  // Backwards-compat shim — returns Turkish label by default.
   const getLevelTitle = useCallback((level: number): string => {
     const titles = ['Yolcu', 'Çırak', 'Arayıcı', 'Yorumcu', 'Mit Bilgesi', 'Arketip Ustası', 'Sembol Pîri'];
     return titles[Math.min(level - 1, titles.length - 1)];
@@ -243,6 +249,7 @@ export function useMitlerStore() {
     updateStats,
     getTopStat,
     getLevelTitle,
+    getLevelTitleKey,
     todayStr,
   };
 }

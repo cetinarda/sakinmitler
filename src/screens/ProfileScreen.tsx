@@ -12,8 +12,9 @@ import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import { useMitlerStore } from '../store/useStore';
 import { useData } from '../data/loader';
 import { useLanguage } from '../i18n/useLanguage';
-import { calcNumerology, LIFE_PATH_MEANINGS } from '../utils/numerology';
+import { calcNumerology } from '../utils/numerology';
 import { getHDProfile } from '../utils/humanDesign';
+import { getLifePathMeaning } from '../utils/numerology';
 import { getWeeklyReading } from '../utils/weeklyReading';
 import { MitlerDetailScreen, MitlerEntry } from './MitlerDetailScreen';
 
@@ -23,17 +24,17 @@ const ELEMENT_EMOJIS: Record<string, string> = {
 };
 
 const BADGES = [
-  { id: 'b001', title: 'Yol Başlangıcı', desc: 'İlk 7 okuma',   emoji: '🌙', required: 7 },
-  { id: 'b002', title: 'Mit Yolcusu',    desc: '21 gün silsile', emoji: '📜', required: 21 },
-  { id: 'b003', title: 'Arketip Bilen',  desc: '30 okuma',       emoji: '🎭', required: 30 },
-  { id: 'b004', title: 'Sembol Ustası',  desc: '50 okuma',       emoji: '☥', required: 50 },
-  { id: 'b005', title: 'Hak Dostu',      desc: '100 okuma',      emoji: '✦', required: 100 },
-  { id: 'b006', title: 'Ezel Anlatıcı',  desc: '365 okuma',      emoji: '☀️', required: 365 },
-];
+  { id: 'b001', titleKey: 'profile.badge.b001.title', descKey: 'profile.badge.b001.desc', emoji: '🌙', required: 7 },
+  { id: 'b002', titleKey: 'profile.badge.b002.title', descKey: 'profile.badge.b002.desc', emoji: '📜', required: 21 },
+  { id: 'b003', titleKey: 'profile.badge.b003.title', descKey: 'profile.badge.b003.desc', emoji: '🎭', required: 30 },
+  { id: 'b004', titleKey: 'profile.badge.b004.title', descKey: 'profile.badge.b004.desc', emoji: '☥', required: 50 },
+  { id: 'b005', titleKey: 'profile.badge.b005.title', descKey: 'profile.badge.b005.desc', emoji: '✦', required: 100 },
+  { id: 'b006', titleKey: 'profile.badge.b006.title', descKey: 'profile.badge.b006.desc', emoji: '☀️', required: 365 },
+] as const;
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitle } = useMitlerStore();
+  const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitleKey } = useMitlerStore();
   const { lang, t, setLanguage } = useLanguage();
   const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
 
@@ -87,7 +88,7 @@ export function ProfileScreen() {
   const totalReadings = profile?.totalReadings || 0;
   const streak        = profile?.streak || 0;
   const level         = profile?.level || 1;
-  const levelTitle    = getLevelTitle(level);
+  const levelTitle    = t(getLevelTitleKey(level) as any);
 
   const levelProgress = () => {
     const nextAt    = level * 7;
@@ -104,14 +105,15 @@ export function ProfileScreen() {
         profile.birthHour,
         profile.birthMinute,
         profile.birthCity,
+        lang,
       );
-      const weekly = getWeeklyReading(nums);
-      const lp     = LIFE_PATH_MEANINGS[nums.lifePath];
+      const weekly = getWeeklyReading(nums, lang);
+      const lp     = getLifePathMeaning(nums.lifePath, lang);
       return { nums, hd, weekly, lp };
     } catch {
       return null;
     }
-  }, [profile?.fullName, profile?.birthDate, profile?.birthHour, profile?.birthMinute, profile?.birthCity]);
+  }, [profile?.fullName, profile?.birthDate, profile?.birthHour, profile?.birthMinute, profile?.birthCity, lang]);
 
   const formatBirthDate = (d: string, m: string, y: string) => {
     const dd = d.padStart(2, '0');
@@ -289,39 +291,55 @@ export function ProfileScreen() {
         <Text style={styles.heroName}>{profile.name}</Text>
         <Text style={styles.heroLevel}>{levelTitle}</Text>
         <Text style={styles.heroElement}>
-          {ELEMENT_EMOJIS[profile.element || 'ateş']} {profile.element || 'Unsur seçilmedi'}
+          {ELEMENT_EMOJIS[profile.element || 'ateş']} {
+            profile.element
+              ? t(
+                  profile.element === 'ateş'   ? 'profile.element.fire'  :
+                  profile.element === 'su'     ? 'profile.element.water' :
+                  profile.element === 'toprak' ? 'profile.element.earth' :
+                                                 'profile.element.air'
+                )
+              : t('profile.elementSeparator')
+          }
         </Text>
       </View>
 
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <Text style={styles.statValue}>{totalReadings}</Text>
-          <Text style={styles.statLabel}>Toplam Okuma</Text>
+          <Text style={styles.statLabel}>{t('profile.stat.totalReadings')}</Text>
         </View>
         <View style={[styles.statBox, styles.statBoxCenter]}>
           <Text style={[styles.statValue, { color: Colors.ember }]}>🔥 {streak}</Text>
-          <Text style={styles.statLabel}>Gün Silsile</Text>
+          <Text style={styles.statLabel}>{t('profile.stat.streak')}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statValue}>{level}</Text>
-          <Text style={styles.statLabel}>Seviye</Text>
+          <Text style={styles.statLabel}>{t('profile.stat.level')}</Text>
         </View>
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Seviye İlerlemesi</Text>
-          <Text style={styles.sectionMeta}>{levelTitle} → {getLevelTitle(level + 1)}</Text>
+          <Text style={styles.sectionTitle}>{t('profile.section.levelProgress')}</Text>
+          <Text style={styles.sectionMeta}>
+            {t('profile.section.levelProgressMeta', {
+              cur: levelTitle,
+              next: t(getLevelTitleKey(level + 1) as any),
+            })}
+          </Text>
         </View>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${levelProgress() * 100}%` }]} />
         </View>
-        <Text style={styles.progressText}>{totalReadings} / {level * 7} okuma</Text>
+        <Text style={styles.progressText}>
+          {t('profile.section.progressText', { cur: totalReadings, total: level * 7 })}
+        </Text>
       </View>
 
       {/* Kişisel Harita */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Kişisel Harita</Text>
+        <Text style={styles.sectionTitle}>{t('profile.section.personalMap')}</Text>
 
         {analysis ? (
           <>
@@ -338,7 +356,7 @@ export function ProfileScreen() {
                     {analysis.lp.title}
                   </Text>
                   <Text style={styles.analysisMeta}>
-                    Hayat Yolu · {analysis.lp.keyword}
+                    {t('profile.numerology.lifePathLabel', { keyword: analysis.lp.keyword })}
                   </Text>
                 </View>
               </View>
@@ -346,15 +364,15 @@ export function ProfileScreen() {
               <View style={styles.subNums}>
                 <View style={styles.subNum}>
                   <Text style={[styles.subNumVal, { color: Colors.goldLight }]}>{analysis.nums.expression}</Text>
-                  <Text style={styles.subNumLabel}>İfade</Text>
+                  <Text style={styles.subNumLabel}>{t('profile.numerology.expression')}</Text>
                 </View>
                 <View style={styles.subNum}>
                   <Text style={[styles.subNumVal, { color: Colors.goldLight }]}>{analysis.nums.soulUrge}</Text>
-                  <Text style={styles.subNumLabel}>Ruh İsteği</Text>
+                  <Text style={styles.subNumLabel}>{t('profile.numerology.soulUrge')}</Text>
                 </View>
                 <View style={styles.subNum}>
                   <Text style={[styles.subNumVal, { color: Colors.goldLight }]}>{analysis.nums.personality}</Text>
-                  <Text style={styles.subNumLabel}>Kişilik</Text>
+                  <Text style={styles.subNumLabel}>{t('profile.numerology.personality')}</Text>
                 </View>
               </View>
             </View>
@@ -367,10 +385,10 @@ export function ProfileScreen() {
                 </View>
                 <View style={styles.analysisHeaderText}>
                   <Text style={[styles.analysisTitle, { color: Colors.purpleLight }]}>
-                    {analysis.hd.type}
+                    {analysis.hd.typeLabel}
                   </Text>
                   <Text style={styles.analysisMeta}>
-                    Human Design · Profil {analysis.hd.profile} · {analysis.hd.definedCount}/9 merkez tanımlı
+                    {t('profile.hd.profile', { profile: analysis.hd.profile, n: analysis.hd.definedCount })}
                   </Text>
                 </View>
                 <View style={[
@@ -385,7 +403,11 @@ export function ProfileScreen() {
                     analysis.hd.precision === 'medium' && { color: Colors.warning },
                     analysis.hd.precision === 'low' && { color: Colors.textMuted },
                   ]}>
-                    {analysis.hd.precision === 'high' ? 'Yüksek' : analysis.hd.precision === 'medium' ? 'Orta' : 'Düşük'}
+                    {analysis.hd.precision === 'high'
+                      ? t('profile.hd.precision.high')
+                      : analysis.hd.precision === 'medium'
+                        ? t('profile.hd.precision.medium')
+                        : t('profile.hd.precision.low')}
                   </Text>
                 </View>
               </View>
@@ -393,26 +415,26 @@ export function ProfileScreen() {
 
               <View style={styles.hdQuickRow}>
                 <View style={styles.hdQuickItem}>
-                  <Text style={styles.hdQuickLabel}>Strateji</Text>
+                  <Text style={styles.hdQuickLabel}>{t('profile.hd.strategyLabel')}</Text>
                   <Text style={styles.hdQuickValue}>{analysis.hd.strategy}</Text>
                 </View>
                 <View style={styles.hdQuickItem}>
-                  <Text style={styles.hdQuickLabel}>Otorite</Text>
+                  <Text style={styles.hdQuickLabel}>{t('profile.hd.authorityLabel')}</Text>
                   <Text style={styles.hdQuickValue}>{analysis.hd.authority}</Text>
                 </View>
                 <View style={styles.hdQuickItem}>
-                  <Text style={styles.hdQuickLabel}>İmza</Text>
+                  <Text style={styles.hdQuickLabel}>{t('profile.hd.signatureLabel')}</Text>
                   <Text style={styles.hdQuickValue}>{analysis.hd.signature}</Text>
                 </View>
               </View>
 
               <View style={[styles.notSelfBox, { borderColor: Colors.purple + '30' }]}>
-                <Text style={[styles.notSelfLabel, { color: Colors.purple }]}>Not-Self (yanlış yöndesin sinyali)</Text>
+                <Text style={[styles.notSelfLabel, { color: Colors.purple }]}>{t('profile.hd.notSelfLabel')}</Text>
                 <Text style={styles.notSelfText}>{analysis.hd.notSelf}</Text>
               </View>
 
               {/* 9 merkez grid */}
-              <Text style={[styles.centersHeader, { color: Colors.purpleLight }]}>9 Enerji Merkezi</Text>
+              <Text style={[styles.centersHeader, { color: Colors.purpleLight }]}>{t('profile.hd.centersHeader')}</Text>
               <View style={styles.centersGrid}>
                 {analysis.hd.centers.map(c => (
                   <View
@@ -431,7 +453,7 @@ export function ProfileScreen() {
                       {c.name}
                     </Text>
                     <Text style={[styles.centerStatus, { color: c.defined ? Colors.purpleLight : Colors.textMuted }]}>
-                      {c.defined ? 'TANIMLI' : 'AÇIK'}
+                      {c.defined ? t('profile.hd.statusDefined') : t('profile.hd.statusOpen')}
                     </Text>
                     <Text style={styles.centerBody}>
                       {c.defined ? c.whenDefined : c.whenOpen}
@@ -455,24 +477,24 @@ export function ProfileScreen() {
                     {analysis.weekly.theme}
                   </Text>
                   <Text style={styles.analysisMeta}>
-                    Haftalık Rehberlik · {analysis.weekly.weekNumber}. hafta
+                    {t('profile.weekly.weekFmt', { week: analysis.weekly.weekNumber })}
                   </Text>
                 </View>
               </View>
               <Text style={styles.analysisDesc}>{analysis.weekly.message}</Text>
               <Text style={[styles.analysisMeta, { marginTop: Spacing.xs }]}>
-                Kişisel yıl: {analysis.weekly.personalYear}
+                {t('profile.weekly.personalYearFmt', { year: analysis.weekly.personalYear })}
               </Text>
             </View>
           </>
         ) : showBirthForm ? (
           <View style={styles.birthForm}>
-            <Text style={styles.birthFormTitle}>İsim ve doğum bilgilerini gir</Text>
+            <Text style={styles.birthFormTitle}>{t('profile.birth.title')}</Text>
             <TextInput
               style={styles.nameInput}
               value={editFullName}
               onChangeText={setEditFullName}
-              placeholder="İsim Soyisim..."
+              placeholder={t('profile.onboarding.fullName')}
               placeholderTextColor={Colors.textMuted}
               autoCapitalize="words"
             />
@@ -481,7 +503,7 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 1 }]}
                 value={editDay}
                 onChangeText={setEditDay}
-                placeholder="Gün"
+                placeholder={t('finder.birth.day')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={2}
@@ -490,7 +512,7 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 1 }]}
                 value={editMonth}
                 onChangeText={setEditMonth}
-                placeholder="Ay"
+                placeholder={t('finder.birth.month')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={2}
@@ -499,22 +521,20 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 2 }]}
                 value={editYear}
                 onChangeText={setEditYear}
-                placeholder="Yıl"
+                placeholder={t('finder.birth.year')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={4}
               />
             </View>
 
-            <Text style={styles.birthHintInline}>
-              Doğum saati ve dakikası girilirse Human Design hesabı çok daha hassas çalışır (opsiyonel).
-            </Text>
+            <Text style={styles.birthHintInline}>{t('profile.birth.hourCityHint')}</Text>
             <View style={styles.dateRow}>
               <TextInput
                 style={[styles.dateInput, { flex: 1 }]}
                 value={editHour}
                 onChangeText={setEditHour}
-                placeholder="Saat (0-23)"
+                placeholder={t('profile.birth.hourPlaceholder')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={2}
@@ -523,7 +543,7 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 1 }]}
                 value={editMinute}
                 onChangeText={setEditMinute}
-                placeholder="Dakika"
+                placeholder={t('profile.birth.minutePlaceholder')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={2}
@@ -534,7 +554,7 @@ export function ProfileScreen() {
               style={[styles.nameInput, { fontSize: Typography.size.md }]}
               value={editCity}
               onChangeText={setEditCity}
-              placeholder="Doğum Şehri (opsiyonel)"
+              placeholder={t('profile.birth.cityPlaceholder')}
               placeholderTextColor={Colors.textMuted}
               autoCapitalize="words"
             />
@@ -546,10 +566,10 @@ export function ProfileScreen() {
               onPress={handleSaveBirthData}
               disabled={editFullName.trim().length === 0 || !birthDataValid(editDay, editMonth, editYear)}
             >
-              <Text style={styles.onboardingBtnText}>Haritamı Oluştur ✦</Text>
+              <Text style={styles.onboardingBtnText}>{t('profile.birth.create')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowBirthForm(false)} style={styles.skipBtn}>
-              <Text style={styles.skipText}>İptal</Text>
+              <Text style={styles.skipText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -572,11 +592,8 @@ export function ProfileScreen() {
             }}
           >
             <Text style={styles.unlockIcon}>✦</Text>
-            <Text style={styles.unlockTitle}>Kişisel Haritanı Aç</Text>
-            <Text style={styles.unlockDesc}>
-              İsim soyisim ve doğum tarihini gir.{'\n'}
-              Numaroloji, Human Design ve haftalık analiz.
-            </Text>
+            <Text style={styles.unlockTitle}>{t('profile.unlock.title')}</Text>
+            <Text style={styles.unlockDesc}>{t('profile.unlock.desc')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -663,13 +680,13 @@ export function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Nasıl Kullanılır?</Text>
+        <Text style={styles.sectionTitle}>{t('profile.section.howTo')}</Text>
         <View style={styles.howCard}>
-          <Text style={styles.howLine}>• Her gün üç deste açılır: <Text style={{ color: Colors.gold }}>Arketipler</Text>, <Text style={{ color: Colors.purpleLight }}>Mitler</Text>, <Text style={{ color: Colors.tealLight }}>İmgeler</Text>.</Text>
-          <Text style={styles.howLine}>• Her karttaki <Text style={{ color: Colors.purpleLight }}>🌙 Rüyada</Text> bölümü, sembol rüyanda görünürse ne anlama gelebileceğini açıklar.</Text>
-          <Text style={styles.howLine}>• <Text style={{ color: Colors.tealLight }}>☀ Gerçek Hayatta</Text> bölümü ise sembolün uyanıkken karşına çıkışında ne söylediğini anlatır.</Text>
-          <Text style={styles.howLine}>• <Text style={{ color: Colors.gold }}>Ara</Text> sekmesinden istediğin mit, arketip veya imgeyi aratabilirsin.</Text>
-          <Text style={styles.howLine}>• Sallayarak veya dokunarak kart açabilirsin.</Text>
+          <Text style={styles.howLine}>{t('profile.howTo.line1')}</Text>
+          <Text style={styles.howLine}>{t('profile.howTo.line2')}</Text>
+          <Text style={styles.howLine}>{t('profile.howTo.line3')}</Text>
+          <Text style={styles.howLine}>{t('profile.howTo.line4')}</Text>
+          <Text style={styles.howLine}>{t('profile.howTo.line5')}</Text>
         </View>
       </View>
 
@@ -716,9 +733,9 @@ export function ProfileScreen() {
                   {earned ? badge.emoji : '🔒'}
                 </Text>
                 <Text style={[styles.badgeTitle, { color: earned ? Colors.gold : Colors.textMuted }]}>
-                  {badge.title}
+                  {t(badge.titleKey as any)}
                 </Text>
-                <Text style={styles.badgeDesc}>{badge.desc}</Text>
+                <Text style={styles.badgeDesc}>{t(badge.descKey as any)}</Text>
               </View>
             );
           })}
