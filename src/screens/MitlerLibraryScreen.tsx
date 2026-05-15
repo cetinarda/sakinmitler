@@ -12,7 +12,10 @@ import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
 import imagesData from '../data/images.json';
-import { MitlerDetailScreen, MitlerEntry, Kind } from './MitlerDetailScreen';
+import tarotData from '../data/tarot.json';
+import runesData from '../data/runes.json';
+import ichingData from '../data/iching.json';
+import { MitlerDetailScreen, MitlerEntry, Kind, KIND_COLOR, KIND_LABEL } from './MitlerDetailScreen';
 
 interface Props {
   onClose: () => void;
@@ -26,10 +29,14 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'archetype', label: 'Arketip' },
   { key: 'myth',      label: 'Mit' },
   { key: 'image',     label: 'İmge' },
+  { key: 'tarot',     label: 'Tarot' },
+  { key: 'rune',      label: 'Rune' },
+  { key: 'iching',    label: 'I Ching' },
 ];
 
 const TOTAL =
-  archetypesData.length + mythsData.length + imagesData.length;
+  archetypesData.length + mythsData.length + imagesData.length +
+  tarotData.length + runesData.length + ichingData.length;
 
 function archetypeEntry(a: typeof archetypesData[0]): MitlerEntry {
   return {
@@ -39,10 +46,7 @@ function archetypeEntry(a: typeof archetypesData[0]): MitlerEntry {
     emoji: a.emoji,
     tagline: (a.keywords || []).slice(0, 2).join(' · '),
     detailMeta: `${a.tradition} · ${a.category}`,
-    searchBlob: [
-      a.name, a.tradition, a.category, a.essence,
-      ...(a.keywords || []),
-    ].join(' '),
+    searchBlob: [a.name, a.tradition, a.category, a.essence, ...(a.keywords || [])].join(' '),
     data: a,
   };
 }
@@ -70,12 +74,55 @@ function imageEntry(i: typeof imagesData[0]): MitlerEntry {
     data: i,
   };
 }
+function tarotEntry(t: typeof tarotData[0]): MitlerEntry {
+  const arcanaLabel =
+    t.arcana === 'major' ? `Major ${t.number}` :
+    t.arcana === 'minor' ? `${t.suit} ${t.number}` :
+                            `${t.rank} of ${t.suit}`;
+  return {
+    kind: 'tarot',
+    id: t.id,
+    name: t.name,
+    emoji: t.emoji,
+    tagline: (t.keywords || []).slice(0, 2).join(' · '),
+    detailMeta: `Tarot · ${arcanaLabel}`,
+    searchBlob: [t.name, arcanaLabel, t.essence, ...(t.keywords || [])].join(' '),
+    data: t,
+  };
+}
+function runeEntry(r: typeof runesData[0]): MitlerEntry {
+  return {
+    kind: 'rune',
+    id: r.id,
+    name: r.name,
+    emoji: r.emoji,
+    tagline: (r.keywords || []).slice(0, 2).join(' · '),
+    detailMeta: `Rune · ${r.aett} aett · ${r.letter}`,
+    searchBlob: [r.name, r.letter, r.aett, r.essence, ...(r.keywords || [])].join(' '),
+    data: r,
+  };
+}
+function ichingEntry(ic: typeof ichingData[0]): MitlerEntry {
+  return {
+    kind: 'iching',
+    id: ic.id,
+    name: ic.name,
+    emoji: ic.emoji,
+    tagline: (ic.keywords || []).slice(0, 2).join(' · '),
+    detailMeta: `I Ching #${ic.number} · ${ic.trigrams}`,
+    searchBlob: [ic.name, String(ic.number), ic.trigrams, ic.essence, ...(ic.keywords || [])].join(' '),
+    data: ic,
+  };
+}
 
 function buildEntries(): MitlerEntry[] {
   return [
     ...archetypesData.map(archetypeEntry),
     ...mythsData.map(mythEntry),
     ...imagesData.map(imageEntry),
+    ...tarotData.map(tarotEntry),
+    ...runesData.map(runeEntry),
+    ...ichingData.map(ichingEntry),
   ];
 }
 
@@ -142,7 +189,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
 
       <View style={[styles.header, embedded && styles.headerCompact]}>
         <Text style={styles.subtitle}>
-          Jung'dan kadim mitlere · {TOTAL} rehber
+          Jung'dan Tarot'a · {TOTAL} rehber
         </Text>
       </View>
 
@@ -164,7 +211,11 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
         )}
       </View>
 
-      <View style={styles.filterRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
         {FILTERS.map(f => {
           const active = filter === f.key;
           return (
@@ -180,7 +231,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -212,10 +263,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
 }
 
 function EntryRow({ entry, onPress }: { entry: MitlerEntry; onPress: () => void }) {
-  const accent =
-    entry.kind === 'archetype' ? Colors.gold :
-    entry.kind === 'myth'      ? Colors.purpleLight :
-                                 Colors.tealLight;
+  const accent = KIND_COLOR[entry.kind];
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.rowImgWrap, { borderColor: accent + '40' }]}>
@@ -224,7 +272,7 @@ function EntryRow({ entry, onPress }: { entry: MitlerEntry; onPress: () => void 
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName}>{entry.name}</Text>
         <Text style={styles.rowMeta} numberOfLines={1}>
-          {entry.kind === 'archetype' ? 'Arketip' : entry.kind === 'myth' ? 'Mit' : 'İmge'}
+          <Text style={{ color: accent }}>{KIND_LABEL[entry.kind]}</Text>
           {entry.tagline ? ` · ${entry.tagline}` : ''}
         </Text>
       </View>
@@ -242,25 +290,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
-  back: {
-    fontSize: Typography.size.sm,
-    color: Colors.tealLight,
-    letterSpacing: 0.5,
-  },
-  familyTag: {
-    fontSize: 9,
-    color: Colors.textMuted,
-    letterSpacing: 2,
-  },
+  back: { fontSize: Typography.size.sm, color: Colors.tealLight, letterSpacing: 0.5 },
+  familyTag: { fontSize: 9, color: Colors.textMuted, letterSpacing: 2 },
   header: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
   },
-  headerCompact: {
-    paddingTop: Spacing.xs,
-    paddingBottom: Spacing.sm,
-  },
+  headerCompact: { paddingTop: Spacing.xs, paddingBottom: Spacing.sm },
   subtitle: {
     fontSize: Typography.size.xs,
     color: Colors.textMuted,
@@ -280,30 +317,21 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.round,
     marginBottom: Spacing.sm,
   },
-  searchIcon: {
-    fontSize: 14,
-    color: Colors.gold,
-    opacity: 0.5,
-  },
+  searchIcon: { fontSize: 14, color: Colors.gold, opacity: 0.5 },
   searchInput: {
     flex: 1,
     fontSize: Typography.size.sm,
     color: Colors.textPrimary,
     padding: 0,
   },
-  clearBtn: {
-    fontSize: Typography.size.sm,
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.xs,
-  },
+  clearBtn: { fontSize: Typography.size.sm, color: Colors.textMuted, paddingHorizontal: Spacing.xs },
   filterRow: {
-    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
     gap: 6,
-    marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
   filterBtn: {
-    flex: 1,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 6,
     borderRadius: BorderRadius.round,
     backgroundColor: Colors.backgroundSecondary,
@@ -316,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.teal + '15',
   },
   filterLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.5,
     fontWeight: Typography.weight.medium,
   },
@@ -335,22 +363,14 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginBottom: Spacing.sm,
   },
-  groupDot: {
-    width: 4, height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.tealLight,
-  },
+  groupDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.tealLight },
   groupLetter: {
     fontSize: Typography.size.sm,
     fontWeight: Typography.weight.semibold,
     color: Colors.tealLight,
     letterSpacing: 2,
   },
-  groupLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.divider,
-  },
+  groupLine: { flex: 1, height: 1, backgroundColor: Colors.divider },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -364,24 +384,12 @@ const styles = StyleSheet.create({
     width: 44, height: 44,
     borderRadius: 22,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: Colors.backgroundCard,
   },
   rowEmoji: { fontSize: 22 },
-  rowName: {
-    fontSize: Typography.size.md,
-    color: Colors.textPrimary,
-    letterSpacing: 0.3,
-  },
-  rowMeta: {
-    fontSize: Typography.size.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  rowArrow: {
-    fontSize: Typography.size.sm,
-    color: Colors.textMuted,
-  },
+  rowName: { fontSize: Typography.size.md, color: Colors.textPrimary, letterSpacing: 0.3 },
+  rowMeta: { fontSize: Typography.size.xs, color: Colors.textMuted, marginTop: 2 },
+  rowArrow: { fontSize: Typography.size.sm, color: Colors.textMuted },
 });

@@ -5,8 +5,11 @@ import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
 import imagesData from '../data/images.json';
+import tarotData from '../data/tarot.json';
+import runesData from '../data/runes.json';
+import ichingData from '../data/iching.json';
 
-export type Kind = 'archetype' | 'myth' | 'image';
+export type Kind = 'archetype' | 'myth' | 'image' | 'tarot' | 'rune' | 'iching';
 
 export interface MitlerEntry {
   kind: Kind;
@@ -16,24 +19,27 @@ export interface MitlerEntry {
   tagline: string;
   detailMeta: string;
   searchBlob: string;
-  data:
-    | typeof archetypesData[0]
-    | typeof mythsData[0]
-    | typeof imagesData[0];
+  data: any;
 }
 
 interface Props { entry: MitlerEntry; onClose: () => void; }
 
-const KIND_LABEL: Record<Kind, string> = {
+export const KIND_LABEL: Record<Kind, string> = {
   archetype: 'Arketip',
   myth: 'Mit',
   image: 'İmge',
+  tarot: 'Tarot',
+  rune: 'Rune',
+  iching: 'I Ching',
 };
 
-const KIND_COLOR: Record<Kind, string> = {
+export const KIND_COLOR: Record<Kind, string> = {
   archetype: Colors.gold,
   myth: Colors.purpleLight,
   image: Colors.tealLight,
+  tarot: Colors.sakinLavender,
+  rune: Colors.emberLight,
+  iching: Colors.sakinMint,
 };
 
 export function MitlerDetailScreen({ entry, onClose }: Props) {
@@ -130,13 +136,40 @@ function buildSections(entry: MitlerEntry): SectionData[] {
       { title: 'Ders',              body: m.lesson,                              color: ACCENT, boxed: true },
     ];
   }
-  const im = entry.data as typeof imagesData[0];
+  if (entry.kind === 'image') {
+    const im = entry.data as typeof imagesData[0];
+    return [
+      { title: 'Öz',                  body: im.essence,                            color: ACCENT },
+      { title: 'Sembolizm',           body: im.symbolism,                          color: ACCENT },
+      { title: 'Rüyada Görülürse',    body: im.dreamMeaning,                       color: DREAM,  boxed: true },
+      { title: 'Gerçek Hayatta',      body: im.wakingMeaning,                      color: WAKING, boxed: true },
+      { title: 'Bugünkü Pratik',      body: im.advice,                             color: ACCENT },
+    ];
+  }
+  if (entry.kind === 'tarot') {
+    const t = entry.data as typeof tarotData[0];
+    return [
+      { title: 'Öz',                  body: t.essence,                             color: ACCENT },
+      { title: 'Düz (Upright)',       body: t.upright,                             color: ACCENT, boxed: true },
+      { title: 'Ters (Reversed)',     body: t.reversed,                            color: Colors.ember, boxed: true },
+      { title: 'Bugünkü Pratik',      body: t.advice,                              color: ACCENT },
+    ];
+  }
+  if (entry.kind === 'rune') {
+    const r = entry.data as typeof runesData[0];
+    return [
+      { title: 'Öz',                  body: r.essence,                             color: ACCENT },
+      { title: 'Düz',                 body: r.upright,                             color: ACCENT, boxed: true },
+      { title: 'Ters',                body: r.reversed,                            color: Colors.ember, boxed: true },
+      { title: 'Bugünkü Pratik',      body: r.advice,                              color: ACCENT },
+    ];
+  }
+  // iching
+  const ic = entry.data as typeof ichingData[0];
   return [
-    { title: 'Öz',                  body: im.essence,                            color: ACCENT },
-    { title: 'Sembolizm',           body: im.symbolism,                          color: ACCENT },
-    { title: 'Rüyada Görülürse',    body: im.dreamMeaning,                       color: DREAM,  boxed: true },
-    { title: 'Gerçek Hayatta',      body: im.wakingMeaning,                      color: WAKING, boxed: true },
-    { title: 'Bugünkü Pratik',      body: im.advice,                             color: ACCENT },
+    { title: 'Öz',                  body: ic.essence,                            color: ACCENT },
+    { title: 'Trigramlar',          body: ic.trigrams,                           color: ACCENT },
+    { title: 'Bugünkü Pratik',      body: ic.advice,                             color: ACCENT, boxed: true },
   ];
 }
 
