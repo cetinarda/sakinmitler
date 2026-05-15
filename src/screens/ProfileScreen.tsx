@@ -17,6 +17,7 @@ import { useLanguage } from '../i18n/useLanguage';
 import { calcNumerology, LIFE_PATH_MEANINGS } from '../utils/numerology';
 import { getHDProfile } from '../utils/humanDesign';
 import { getWeeklyReading } from '../utils/weeklyReading';
+import { MitlerDetailScreen, MitlerEntry } from './MitlerDetailScreen';
 
 const ELEMENTS = ['ateş', 'su', 'toprak', 'hava'] as const;
 const ELEMENT_EMOJIS: Record<string, string> = {
@@ -41,6 +42,23 @@ export function ProfileScreen() {
   const [name, setName] = useState('');
   const [element, setElement] = useState<typeof ELEMENTS[number]>('ateş');
   const [step, setStep] = useState(1);
+  const [openEntry, setOpenEntry] = useState<MitlerEntry | null>(null);
+
+  const openArchetype = (a: typeof archetypesData[0]) =>
+    setOpenEntry({
+      kind: 'archetype', id: a.id, name: a.name, emoji: a.emoji,
+      tagline: '', detailMeta: `${a.tradition} · ${a.category}`, searchBlob: '', data: a,
+    });
+  const openMyth = (m: typeof mythsData[0]) =>
+    setOpenEntry({
+      kind: 'myth', id: m.id, name: m.name, emoji: m.emoji,
+      tagline: '', detailMeta: `${m.culture} · ${m.era}`, searchBlob: '', data: m,
+    });
+  const openImage = (i: typeof imagesData[0]) =>
+    setOpenEntry({
+      kind: 'image', id: i.id, name: i.name, emoji: i.emoji,
+      tagline: '', detailMeta: `${i.tradition} · ${i.category}`, searchBlob: '', data: i,
+    });
 
   // step 3 birth data
   const [fullName, setFullName] = useState('');
@@ -54,6 +72,9 @@ export function ProfileScreen() {
   const [editDay, setEditDay] = useState('');
   const [editMonth, setEditMonth] = useState('');
   const [editYear, setEditYear] = useState('');
+  const [editHour, setEditHour] = useState('');
+  const [editMinute, setEditMinute] = useState('');
+  const [editCity, setEditCity] = useState('');
 
   const topArchetypeId = getTopStat(stats.archetypeCounts);
   const topMythId      = getTopStat(stats.mythCounts);
@@ -79,14 +100,19 @@ export function ProfileScreen() {
     if (!profile?.fullName || !profile?.birthDate) return null;
     try {
       const nums   = calcNumerology(profile.fullName, profile.birthDate);
-      const hd     = getHDProfile(profile.birthDate);
+      const hd     = getHDProfile(
+        profile.birthDate,
+        profile.birthHour,
+        profile.birthMinute,
+        profile.birthCity,
+      );
       const weekly = getWeeklyReading(nums);
       const lp     = LIFE_PATH_MEANINGS[nums.lifePath];
       return { nums, hd, weekly, lp };
     } catch {
       return null;
     }
-  }, [profile?.fullName, profile?.birthDate]);
+  }, [profile?.fullName, profile?.birthDate, profile?.birthHour, profile?.birthMinute, profile?.birthCity]);
 
   const formatBirthDate = (d: string, m: string, y: string) => {
     const dd = d.padStart(2, '0');
@@ -121,7 +147,10 @@ export function ProfileScreen() {
   const handleSaveBirthData = async () => {
     if (!birthDataValid(editDay, editMonth, editYear)) return;
     const bd = formatBirthDate(editDay, editMonth, editYear);
-    await updateBirthData(editFullName.trim(), bd);
+    const hourNum = editHour.trim() !== '' ? Math.min(Math.max(parseInt(editHour, 10), 0), 23) : undefined;
+    const minNum = editMinute.trim() !== '' ? Math.min(Math.max(parseInt(editMinute, 10), 0), 59) : undefined;
+    const city = editCity.trim() || undefined;
+    await updateBirthData(editFullName.trim(), bd, { birthHour: hourNum, birthMinute: minNum, birthCity: city });
     setShowBirthForm(false);
   };
 
@@ -242,6 +271,10 @@ export function ProfileScreen() {
 
   if (!profile) return null;
 
+  if (openEntry) {
+    return <MitlerDetailScreen entry={openEntry} onClose={() => setOpenEntry(null)} />;
+  }
+
   return (
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
@@ -338,15 +371,78 @@ export function ProfileScreen() {
                     {analysis.hd.type}
                   </Text>
                   <Text style={styles.analysisMeta}>
-                    Human Design · Strateji: {analysis.hd.strategy}
+                    Human Design · Profil {analysis.hd.profile} · {analysis.hd.definedCount}/9 merkez tanımlı
+                  </Text>
+                </View>
+                <View style={[
+                  styles.precisionBadge,
+                  analysis.hd.precision === 'high' && { borderColor: Colors.success, backgroundColor: Colors.success + '20' },
+                  analysis.hd.precision === 'medium' && { borderColor: Colors.warning, backgroundColor: Colors.warning + '20' },
+                  analysis.hd.precision === 'low' && { borderColor: Colors.textMuted, backgroundColor: Colors.surface },
+                ]}>
+                  <Text style={[
+                    styles.precisionBadgeText,
+                    analysis.hd.precision === 'high' && { color: Colors.success },
+                    analysis.hd.precision === 'medium' && { color: Colors.warning },
+                    analysis.hd.precision === 'low' && { color: Colors.textMuted },
+                  ]}>
+                    {analysis.hd.precision === 'high' ? 'Yüksek' : analysis.hd.precision === 'medium' ? 'Orta' : 'Düşük'}
                   </Text>
                 </View>
               </View>
               <Text style={styles.analysisDesc}>{analysis.hd.desc}</Text>
+
+              <View style={styles.hdQuickRow}>
+                <View style={styles.hdQuickItem}>
+                  <Text style={styles.hdQuickLabel}>Strateji</Text>
+                  <Text style={styles.hdQuickValue}>{analysis.hd.strategy}</Text>
+                </View>
+                <View style={styles.hdQuickItem}>
+                  <Text style={styles.hdQuickLabel}>Otorite</Text>
+                  <Text style={styles.hdQuickValue}>{analysis.hd.authority}</Text>
+                </View>
+                <View style={styles.hdQuickItem}>
+                  <Text style={styles.hdQuickLabel}>İmza</Text>
+                  <Text style={styles.hdQuickValue}>{analysis.hd.signature}</Text>
+                </View>
+              </View>
+
               <View style={[styles.notSelfBox, { borderColor: Colors.purple + '30' }]}>
-                <Text style={[styles.notSelfLabel, { color: Colors.purple }]}>Not-Self Tema</Text>
+                <Text style={[styles.notSelfLabel, { color: Colors.purple }]}>Not-Self (yanlış yöndesin sinyali)</Text>
                 <Text style={styles.notSelfText}>{analysis.hd.notSelf}</Text>
               </View>
+
+              {/* 9 merkez grid */}
+              <Text style={[styles.centersHeader, { color: Colors.purpleLight }]}>9 Enerji Merkezi</Text>
+              <View style={styles.centersGrid}>
+                {analysis.hd.centers.map(c => (
+                  <View
+                    key={c.id}
+                    style={[
+                      styles.centerCard,
+                      c.defined
+                        ? { borderColor: Colors.purple, backgroundColor: Colors.purple + '15' }
+                        : { borderColor: Colors.divider, backgroundColor: 'transparent' },
+                    ]}
+                  >
+                    <Text style={[styles.centerSymbol, { color: c.defined ? Colors.purpleLight : Colors.textMuted }]}>
+                      {c.symbol}
+                    </Text>
+                    <Text style={[styles.centerName, { color: c.defined ? Colors.textPrimary : Colors.textMuted }]}>
+                      {c.name}
+                    </Text>
+                    <Text style={[styles.centerStatus, { color: c.defined ? Colors.purpleLight : Colors.textMuted }]}>
+                      {c.defined ? 'TANIMLI' : 'AÇIK'}
+                    </Text>
+                    <Text style={styles.centerBody}>
+                      {c.defined ? c.whenDefined : c.whenOpen}
+                    </Text>
+                    <Text style={styles.centerTip}>{c.tip}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <Text style={styles.hdDisclaimer}>{analysis.hd.disclaimer}</Text>
             </View>
 
             {/* Weekly Reading */}
@@ -410,6 +506,40 @@ export function ProfileScreen() {
                 maxLength={4}
               />
             </View>
+
+            <Text style={styles.birthHintInline}>
+              Doğum saati ve dakikası girilirse Human Design hesabı çok daha hassas çalışır (opsiyonel).
+            </Text>
+            <View style={styles.dateRow}>
+              <TextInput
+                style={[styles.dateInput, { flex: 1 }]}
+                value={editHour}
+                onChangeText={setEditHour}
+                placeholder="Saat (0-23)"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+              <TextInput
+                style={[styles.dateInput, { flex: 1 }]}
+                value={editMinute}
+                onChangeText={setEditMinute}
+                placeholder="Dakika"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+            </View>
+
+            <TextInput
+              style={[styles.nameInput, { fontSize: Typography.size.md }]}
+              value={editCity}
+              onChangeText={setEditCity}
+              placeholder="Doğum Şehri (opsiyonel)"
+              placeholderTextColor={Colors.textMuted}
+              autoCapitalize="words"
+            />
+
             <TouchableOpacity
               style={[styles.onboardingBtn, {
                 opacity: editFullName.trim().length > 0 && birthDataValid(editDay, editMonth, editYear) ? 1 : 0.4
@@ -427,8 +557,18 @@ export function ProfileScreen() {
           <TouchableOpacity
             style={styles.unlockBtn}
             onPress={() => {
-              setEditFullName('');
-              setEditDay(''); setEditMonth(''); setEditYear('');
+              setEditFullName(profile.fullName || '');
+              if (profile.birthDate) {
+                const [y, m, d] = profile.birthDate.split('-');
+                setEditDay(String(parseInt(d, 10)));
+                setEditMonth(String(parseInt(m, 10)));
+                setEditYear(y);
+              } else {
+                setEditDay(''); setEditMonth(''); setEditYear('');
+              }
+              setEditHour(profile.birthHour !== undefined ? String(profile.birthHour) : '');
+              setEditMinute(profile.birthMinute !== undefined ? String(profile.birthMinute) : '');
+              setEditCity(profile.birthCity || '');
               setShowBirthForm(true);
             }}
           >
@@ -444,50 +584,82 @@ export function ProfileScreen() {
 
       {/* Mit Haritan */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mit Haritan</Text>
+        <Text style={styles.sectionTitle}>{t('profile.section.mythMap')}</Text>
 
         {topArchetype && (
-          <View style={[styles.spiritCard, { borderColor: Colors.gold }]}>
+          <TouchableOpacity
+            style={[styles.spiritCard, { borderColor: Colors.gold }]}
+            onPress={() => openArchetype(topArchetype)}
+            activeOpacity={0.85}
+          >
             <Text style={styles.spiritEmoji}>{topArchetype.emoji}</Text>
             <View style={styles.spiritInfo}>
-              <Text style={styles.spiritLabel}>Baskın Arketipin</Text>
+              <Text style={styles.spiritLabel}>{t('profile.map.topArchetype')}</Text>
               <Text style={[styles.spiritValue, { color: Colors.gold }]}>{topArchetype.name}</Text>
-              <Text style={styles.spiritCount}>{stats.archetypeCounts[topArchetype.id] || 0} kez · {topArchetype.tradition}</Text>
+              <Text style={styles.spiritCount}>
+                {t('profile.map.timesAccompanied', {
+                  n: stats.archetypeCounts[topArchetype.id] || 0,
+                  meta: topArchetype.tradition,
+                })}
+              </Text>
             </View>
-          </View>
+            <Text style={[styles.spiritArrow, { color: Colors.gold }]}>→</Text>
+          </TouchableOpacity>
         )}
         {topMyth && (
-          <View style={[styles.spiritCard, { borderColor: Colors.purple }]}>
+          <TouchableOpacity
+            style={[styles.spiritCard, { borderColor: Colors.purple }]}
+            onPress={() => openMyth(topMyth)}
+            activeOpacity={0.85}
+          >
             <Text style={styles.spiritEmoji}>{topMyth.emoji}</Text>
             <View style={styles.spiritInfo}>
-              <Text style={styles.spiritLabel}>Sana Konuşan Mit</Text>
+              <Text style={styles.spiritLabel}>{t('profile.map.topMyth')}</Text>
               <Text style={[styles.spiritValue, { color: Colors.purpleLight }]}>{topMyth.name}</Text>
-              <Text style={styles.spiritCount}>{stats.mythCounts[topMyth.id] || 0} kez · {topMyth.culture}</Text>
+              <Text style={styles.spiritCount}>
+                {t('profile.map.timesAccompanied', {
+                  n: stats.mythCounts[topMyth.id] || 0,
+                  meta: topMyth.culture,
+                })}
+              </Text>
             </View>
-          </View>
+            <Text style={[styles.spiritArrow, { color: Colors.purpleLight }]}>→</Text>
+          </TouchableOpacity>
         )}
         {topImage && (
-          <View style={[styles.spiritCard, { borderColor: Colors.teal }]}>
+          <TouchableOpacity
+            style={[styles.spiritCard, { borderColor: Colors.teal }]}
+            onPress={() => openImage(topImage)}
+            activeOpacity={0.85}
+          >
             <Text style={styles.spiritEmoji}>{topImage.emoji}</Text>
             <View style={styles.spiritInfo}>
-              <Text style={styles.spiritLabel}>Sembolün</Text>
+              <Text style={styles.spiritLabel}>{t('profile.map.topImage')}</Text>
               <Text style={[styles.spiritValue, { color: Colors.tealLight }]}>{topImage.name}</Text>
-              <Text style={styles.spiritCount}>{stats.imageCounts[topImage.id] || 0} kez · {topImage.tradition}</Text>
+              <Text style={styles.spiritCount}>
+                {t('profile.map.timesAccompanied', {
+                  n: stats.imageCounts[topImage.id] || 0,
+                  meta: topImage.tradition,
+                })}
+              </Text>
             </View>
-          </View>
+            <Text style={[styles.spiritArrow, { color: Colors.tealLight }]}>→</Text>
+          </TouchableOpacity>
         )}
         {topTradition && (
           <View style={[styles.spiritCard, { borderColor: Colors.ember }]}>
             <Text style={styles.spiritEmoji}>📜</Text>
             <View style={styles.spiritInfo}>
-              <Text style={styles.spiritLabel}>Geleneğin</Text>
+              <Text style={styles.spiritLabel}>{t('profile.map.topTradition')}</Text>
               <Text style={[styles.spiritValue, { color: Colors.emberLight }]}>{topTradition}</Text>
-              <Text style={styles.spiritCount}>{stats.traditionCounts[topTradition] || 0} kez eşlik etti</Text>
+              <Text style={styles.spiritCount}>
+                {t('profile.map.timesCalled', { n: stats.traditionCounts[topTradition] || 0 })}
+              </Text>
             </View>
           </View>
         )}
         {totalReadings === 0 && (
-          <Text style={styles.emptyHint}>İlk destenı aç, mit haritan oluşmaya başlasın.</Text>
+          <Text style={styles.emptyHint}>{t('profile.map.emptyHint')}</Text>
         )}
       </View>
 
@@ -820,6 +992,102 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: Typography.size.xs * 1.7,
   },
+  precisionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.round,
+    borderWidth: 1,
+  },
+  precisionBadgeText: {
+    fontSize: 9,
+    fontWeight: Typography.weight.bold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  hdQuickRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  hdQuickItem: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.sm,
+    alignItems: 'center',
+    gap: 4,
+  },
+  hdQuickLabel: {
+    fontSize: 9,
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  hdQuickValue: {
+    fontSize: Typography.size.xs,
+    color: Colors.textPrimary,
+    fontWeight: Typography.weight.semibold,
+    textAlign: 'center',
+  },
+  centersHeader: {
+    fontSize: Typography.size.xs,
+    fontWeight: Typography.weight.semibold,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  centersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  centerCard: {
+    width: '48%',
+    minWidth: 130,
+    flexGrow: 1,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    gap: 4,
+  },
+  centerSymbol: { fontSize: 16 },
+  centerName: {
+    fontSize: Typography.size.xs,
+    fontWeight: Typography.weight.semibold,
+  },
+  centerStatus: {
+    fontSize: 9,
+    letterSpacing: 1.5,
+    fontWeight: Typography.weight.bold,
+  },
+  centerBody: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  centerTip: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    lineHeight: 14,
+    marginTop: 4,
+  },
+  hdDisclaimer: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: Spacing.md,
+    lineHeight: 14,
+  },
+  birthHintInline: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: Spacing.xs,
+    lineHeight: Typography.size.xs * 1.6,
+  },
 
   unlockBtn: {
     backgroundColor: Colors.backgroundCard,
@@ -863,6 +1131,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   spiritEmoji: { fontSize: 32 },
+  spiritArrow: { fontSize: 18, marginLeft: Spacing.sm },
   spiritInfo: { flex: 1 },
   spiritLabel: {
     fontSize: Typography.size.xs,
