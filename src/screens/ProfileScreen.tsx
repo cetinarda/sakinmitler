@@ -13,6 +13,7 @@ import { useMitlerStore } from '../store/useStore';
 import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
 import imagesData from '../data/images.json';
+import { useLanguage } from '../i18n/useLanguage';
 import { calcNumerology, LIFE_PATH_MEANINGS } from '../utils/numerology';
 import { getHDProfile } from '../utils/humanDesign';
 import { getWeeklyReading } from '../utils/weeklyReading';
@@ -34,6 +35,7 @@ const BADGES = [
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitle } = useMitlerStore();
+  const { lang, t, setLanguage } = useLanguage();
 
   const [showOnboarding, setShowOnboarding] = useState(isNewUser);
   const [name, setName] = useState('');
@@ -131,20 +133,17 @@ export function ProfileScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.onboardingEmoji}>☥</Text>
-        <Text style={styles.onboardingTitle}>SAKİN MİTLER</Text>
-        <Text style={styles.onboardingSubtitle}>
-          Jung'un izinde arketipler, mitler ve imgeler{'\n'}
-          Rüyada ve gerçek hayatta sana ne söylüyorlar?
-        </Text>
+        <Text style={styles.onboardingTitle}>{t('profile.onboarding.title')}</Text>
+        <Text style={styles.onboardingSubtitle}>{t('profile.onboarding.subtitle')}</Text>
 
         {step === 1 && (
           <>
-            <Text style={styles.onboardingQuestion}>Adın nedir, yolcu?</Text>
+            <Text style={styles.onboardingQuestion}>{t('profile.onboarding.q1')}</Text>
             <TextInput
               style={styles.nameInput}
               value={name}
               onChangeText={setName}
-              placeholder="Adını yaz..."
+              placeholder={t('profile.onboarding.namePlaceholder')}
               placeholderTextColor={Colors.textMuted}
               autoFocus
             />
@@ -153,36 +152,40 @@ export function ProfileScreen() {
 
         {step === 2 && (
           <>
-            <Text style={styles.onboardingQuestion}>Hangi unsura yakın hissediyorsun?</Text>
+            <Text style={styles.onboardingQuestion}>{t('profile.onboarding.q2')}</Text>
             <View style={styles.elementsGrid}>
-              {ELEMENTS.map(el => (
-                <TouchableOpacity
-                  key={el}
-                  style={[styles.elementBtn, element === el && styles.elementBtnActive]}
-                  onPress={() => setElement(el)}
-                >
-                  <Text style={styles.elementEmoji}>{ELEMENT_EMOJIS[el]}</Text>
-                  <Text style={[styles.elementName, { color: element === el ? Colors.gold : Colors.textSecondary }]}>
-                    {el.charAt(0).toUpperCase() + el.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {ELEMENTS.map(el => {
+                const elKey =
+                  el === 'ateş'   ? 'profile.element.fire'  :
+                  el === 'su'     ? 'profile.element.water' :
+                  el === 'toprak' ? 'profile.element.earth' :
+                                    'profile.element.air';
+                return (
+                  <TouchableOpacity
+                    key={el}
+                    style={[styles.elementBtn, element === el && styles.elementBtnActive]}
+                    onPress={() => setElement(el)}
+                  >
+                    <Text style={styles.elementEmoji}>{ELEMENT_EMOJIS[el]}</Text>
+                    <Text style={[styles.elementName, { color: element === el ? Colors.gold : Colors.textSecondary }]}>
+                      {t(elKey)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </>
         )}
 
         {step === 3 && (
           <>
-            <Text style={styles.onboardingQuestion}>Derin analiz için</Text>
-            <Text style={styles.onboardingHint}>
-              İsim analizi, numaroloji ve haftalık mit haritası için.{'\n'}
-              İstersen atlayabilirsin.
-            </Text>
+            <Text style={styles.onboardingQuestion}>{t('profile.onboarding.q3')}</Text>
+            <Text style={styles.onboardingHint}>{t('profile.onboarding.q3desc')}</Text>
             <TextInput
               style={styles.nameInput}
               value={fullName}
               onChangeText={setFullName}
-              placeholder="İsim Soyisim..."
+              placeholder={t('profile.onboarding.fullName')}
               placeholderTextColor={Colors.textMuted}
               autoCapitalize="words"
             />
@@ -191,7 +194,7 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 1 }]}
                 value={birthDay}
                 onChangeText={setBirthDay}
-                placeholder="Gün"
+                placeholder={t('finder.birth.day')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={2}
@@ -200,7 +203,7 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 1 }]}
                 value={birthMonth}
                 onChangeText={setBirthMonth}
-                placeholder="Ay"
+                placeholder={t('finder.birth.month')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={2}
@@ -209,7 +212,7 @@ export function ProfileScreen() {
                 style={[styles.dateInput, { flex: 2 }]}
                 value={birthYear}
                 onChangeText={setBirthYear}
-                placeholder="Yıl"
+                placeholder={t('finder.birth.year')}
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
                 maxLength={4}
@@ -224,13 +227,13 @@ export function ProfileScreen() {
           disabled={step === 1 && name.trim().length === 0}
         >
           <Text style={styles.onboardingBtnText}>
-            {step === 1 ? 'Devam Et →' : step === 2 ? 'Devam Et →' : 'Yola Çık ✦'}
+            {step < 3 ? t('common.continue') : t('profile.onboarding.start')}
           </Text>
         </TouchableOpacity>
 
         {step === 3 && (
           <TouchableOpacity onPress={handleSkipBirth} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Şimdi değil, atla</Text>
+            <Text style={styles.skipText}>{t('common.skip')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -499,9 +502,34 @@ export function ProfileScreen() {
         </View>
       </View>
 
+      {/* Dil */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('profile.language')}</Text>
+        <View style={styles.langRow}>
+          {(['tr', 'en'] as const).map(code => {
+            const active = lang === code;
+            return (
+              <TouchableOpacity
+                key={code}
+                style={[styles.langBtn, active && styles.langBtnActive]}
+                onPress={() => setLanguage(code)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.langLabel, { color: active ? Colors.gold : Colors.textMuted }]}>
+                  {t(code === 'tr' ? 'profile.language.tr' : 'profile.language.en')}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {lang === 'en' && (
+          <Text style={styles.langNote}>{t('profile.contentLangNote')}</Text>
+        )}
+      </View>
+
       {/* Rozetler */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rozetler</Text>
+        <Text style={styles.sectionTitle}>{t('profile.section.badges')}</Text>
         <View style={styles.badgesGrid}>
           {BADGES.map(badge => {
             const earned = totalReadings >= badge.required || streak >= badge.required;
@@ -872,6 +900,33 @@ const styles = StyleSheet.create({
   },
 
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+
+  langRow: { flexDirection: 'row', gap: Spacing.sm },
+  langBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.divider,
+    alignItems: 'center',
+  },
+  langBtnActive: {
+    borderColor: Colors.gold,
+    backgroundColor: Colors.goldGlow,
+  },
+  langLabel: {
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.semibold,
+    letterSpacing: 0.5,
+  },
+  langNote: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: Spacing.sm,
+    lineHeight: Typography.size.xs * 1.6,
+  },
   badgeCard: {
     width: '30%', flex: 1, minWidth: 90,
     backgroundColor: Colors.backgroundCard,

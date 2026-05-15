@@ -16,6 +16,7 @@ import archetypesData from '../data/archetypes.json';
 import mythsData from '../data/myths.json';
 import imagesData from '../data/images.json';
 import { useMitlerStore } from '../store/useStore';
+import { useLanguage } from '../i18n/useLanguage';
 
 interface HomeScreenProps {
   onNavigateToProfile?: () => void;
@@ -26,10 +27,10 @@ const CARD_W = Math.min(Math.round(SCREEN_W * 0.62), 260);
 const CARD_H = Math.round(CARD_W * 1.7);
 const STACK = 7;
 
-const DECKS = [
-  { title: 'Arketipler', subtitle: 'Jung\'un evrensel desenleri', color: Colors.gold,   motif: '◈' },
-  { title: 'Mitler',     subtitle: 'Tarihin derin hikayeleri',  color: Colors.purple, motif: '◈' },
-  { title: 'İmgeler',    subtitle: 'Sembolik dilin alfabesi',   color: Colors.teal,   motif: '◈' },
+const DECK_CONFIG = [
+  { tKey: 'home.deck.archetype' as const, subKey: 'home.deck.archetypeSub' as const, color: Colors.gold,   motif: '◈' },
+  { tKey: 'home.deck.myth'      as const, subKey: 'home.deck.mythSub'      as const, color: Colors.purple, motif: '◈' },
+  { tKey: 'home.deck.image'     as const, subKey: 'home.deck.imageSub'     as const, color: Colors.teal,   motif: '◈' },
 ];
 
 function KilimBand({ color }: { color: string }) {
@@ -164,7 +165,7 @@ function SectionLabel({ label, color }: { label: string; color: string }) {
   );
 }
 
-function MiniDeck({ deck, state }: { deck: typeof DECKS[0]; state: 'done' | 'active' | 'pending' }) {
+function MiniDeck({ deck, label, state }: { deck: typeof DECK_CONFIG[0]; label: string; state: 'done' | 'active' | 'pending' }) {
   const color = state === 'pending' ? Colors.textMuted : deck.color;
   return (
     <View style={[ms.wrapper, state === 'active' && { opacity: 1 }, state === 'pending' && { opacity: 0.35 }]}>
@@ -178,7 +179,7 @@ function MiniDeck({ deck, state }: { deck: typeof DECKS[0]; state: 'done' | 'act
           {state === 'done' ? '✓' : deck.motif}
         </Text>
       </View>
-      <Text style={[ms.label, { color }]}>{deck.title}</Text>
+      <Text style={[ms.label, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -186,6 +187,7 @@ function MiniDeck({ deck, state }: { deck: typeof DECKS[0]; state: 'done' | 'act
 export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const { profile, dailyReading, generateDailyReading, updateStats } = useMitlerStore();
+  const { t } = useLanguage();
 
   const [reading, setReading] = useState(dailyReading);
   const [step, setStep]       = useState(0);
@@ -235,7 +237,9 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
   const myth      = reading ? mythsData.find(m => m.id === reading.mythId)         : null;
   const image     = reading ? imagesData.find(i => i.id === reading.imageId)       : null;
 
-  const deck = DECKS[step];
+  const deck = DECK_CONFIG[step];
+  const deckTitle = t(deck.tKey);
+  const deckSub = t(deck.subKey);
 
   const triggerReveal = () => {
     if (revealedRef.current) return;
@@ -250,7 +254,7 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
 
   const handleNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (step < DECKS.length - 1) {
+    if (step < DECK_CONFIG.length - 1) {
       Animated.timing(frontFade, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
         setStep(s => s + 1);
         setRevealed(false);
@@ -265,10 +269,10 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
 
   const greeting = () => {
     const h = new Date().getHours();
-    if (h < 6)  return 'Gece';
-    if (h < 12) return 'Günaydın';
-    if (h < 18) return 'İyi günler';
-    return 'İyi akşamlar';
+    if (h < 6)  return t('greeting.night');
+    if (h < 12) return t('greeting.morning');
+    if (h < 18) return t('greeting.day');
+    return t('greeting.evening');
   };
 
   return (
@@ -278,7 +282,7 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>{greeting()}</Text>
-          <Text style={styles.username}>{profile?.name || 'Yolcu'}</Text>
+          <Text style={styles.username}>{profile?.name || t('greeting.guest')}</Text>
         </View>
         <TouchableOpacity onPress={onNavigateToProfile} style={styles.profileBtn}>
           <Text style={styles.profileInitial}>
@@ -291,8 +295,8 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
         {done ? (
           <View style={styles.doneWrap}>
             <Text style={{ fontSize: 40, color: Colors.gold }}>☥</Text>
-            <Text style={styles.doneTitle}>Bugünkü mit okuman{'\n'}tamamlandı</Text>
-            <Text style={styles.doneSub}>Yarın bambaşka bir hikaye sana eşlik edecek</Text>
+            <Text style={styles.doneTitle}>{t('home.done.title')}</Text>
+            <Text style={styles.doneSub}>{t('home.done.sub')}</Text>
             {archetype && (
               <>
                 <View style={styles.doneLine} />
@@ -339,12 +343,12 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
                       <View style={[styles.hLine, { bottom: '30%', backgroundColor: deck.color }]} />
 
                       <Text style={{ fontSize: 38, color: deck.color, lineHeight: 44 }}>☥</Text>
-                      <Text style={[styles.backTitle, { color: deck.color }]}>{deck.title}</Text>
-                      <Text style={styles.backSub}>{deck.subtitle}</Text>
+                      <Text style={[styles.backTitle, { color: deck.color }]}>{deckTitle}</Text>
+                      <Text style={styles.backSub}>{deckSub}</Text>
 
                       <View style={styles.tapRow}>
                         <View style={[styles.tapLine, { backgroundColor: deck.color }]} />
-                        <Text style={[styles.tapHint, { color: deck.color }]}>salla · dokun</Text>
+                        <Text style={[styles.tapHint, { color: deck.color }]}>{t('home.tapHint')}</Text>
                         <View style={[styles.tapLine, { backgroundColor: deck.color }]} />
                       </View>
                     </View>
@@ -363,7 +367,7 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
                 >
                   <View style={[styles.frontHeader, { borderBottomColor: deck.color + '30' }]}>
                     <Text style={{ fontSize: 10, color: deck.color }}>☥</Text>
-                    <Text style={[styles.frontTitle, { color: deck.color }]}>{deck.title}</Text>
+                    <Text style={[styles.frontTitle, { color: deck.color }]}>{deckTitle}</Text>
                   </View>
                   <ScrollView
                     style={styles.scroll}
@@ -380,7 +384,7 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.nextBtnText, { color: deck.color }]}>
-                      {step < DECKS.length - 1 ? 'Sıradaki Deste →' : 'Tamamlandı ✦'}
+                      {step < DECK_CONFIG.length - 1 ? t('common.next') : t('common.done')}
                     </Text>
                   </TouchableOpacity>
                 </Animated.View>
@@ -388,10 +392,11 @@ export function HomeScreen({ onNavigateToProfile }: HomeScreenProps) {
             </View>
 
             <View style={styles.deckRow}>
-              {DECKS.map((d, i) => (
+              {DECK_CONFIG.map((d, i) => (
                 <MiniDeck
                   key={i}
                   deck={d}
+                  label={t(d.tKey)}
                   state={i < step ? 'done' : i === step ? 'active' : 'pending'}
                 />
               ))}

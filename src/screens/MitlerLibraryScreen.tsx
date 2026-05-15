@@ -16,6 +16,7 @@ import tarotData from '../data/tarot.json';
 import runesData from '../data/runes.json';
 import ichingData from '../data/iching.json';
 import { MitlerDetailScreen, MitlerEntry, Kind, KIND_COLOR, KIND_LABEL } from './MitlerDetailScreen';
+import { useLanguage } from '../i18n/useLanguage';
 
 interface Props {
   onClose: () => void;
@@ -24,14 +25,23 @@ interface Props {
 
 type Filter = 'all' | Kind;
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all',       label: 'Tümü' },
-  { key: 'archetype', label: 'Arketip' },
-  { key: 'myth',      label: 'Mit' },
-  { key: 'image',     label: 'İmge' },
-  { key: 'tarot',     label: 'Tarot' },
-  { key: 'rune',      label: 'Rune' },
-  { key: 'iching',    label: 'I Ching' },
+type FilterTKey =
+  | 'library.filter.all'
+  | 'library.filter.archetype'
+  | 'library.filter.myth'
+  | 'library.filter.image'
+  | 'library.filter.tarot'
+  | 'library.filter.rune'
+  | 'library.filter.iching';
+
+const FILTERS: { key: Filter; tKey: FilterTKey }[] = [
+  { key: 'all',       tKey: 'library.filter.all' },
+  { key: 'archetype', tKey: 'library.filter.archetype' },
+  { key: 'myth',      tKey: 'library.filter.myth' },
+  { key: 'image',     tKey: 'library.filter.image' },
+  { key: 'tarot',     tKey: 'library.filter.tarot' },
+  { key: 'rune',      tKey: 'library.filter.rune' },
+  { key: 'iching',    tKey: 'library.filter.iching' },
 ];
 
 const TOTAL =
@@ -140,6 +150,7 @@ function normalize(s: string): string {
 
 export function MitlerLibraryScreen({ onClose, embedded }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [selected, setSelected] = useState<MitlerEntry | null>(null);
@@ -181,15 +192,15 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
       {!embedded && (
         <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
           <TouchableOpacity onPress={onClose} hitSlop={12}>
-            <Text style={styles.back}>← Geri</Text>
+            <Text style={styles.back}>{t('common.back')}</Text>
           </TouchableOpacity>
-          <Text style={styles.familyTag}>SAKİN · MİTLER</Text>
+          <Text style={styles.familyTag}>{t('common.familyTag')}</Text>
         </View>
       )}
 
       <View style={[styles.header, embedded && styles.headerCompact]}>
         <Text style={styles.subtitle}>
-          Jung'dan Tarot'a · {TOTAL} rehber
+          {t('library.subtitle', { n: TOTAL })}
         </Text>
       </View>
 
@@ -199,7 +210,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
-          placeholder="İsim, sembol veya tema ile ara..."
+          placeholder={t('library.search.placeholder')}
           placeholderTextColor={Colors.textMuted}
           autoCapitalize="none"
           autoCorrect={false}
@@ -227,7 +238,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
               activeOpacity={0.8}
             >
               <Text style={[styles.filterLabel, { color: active ? Colors.tealLight : Colors.textMuted }]}>
-                {f.label}
+                {t(f.tKey)}
               </Text>
             </TouchableOpacity>
           );
@@ -239,7 +250,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {groups.length === 0 && (
-          <Text style={styles.empty}>Arama sonucu yok.</Text>
+          <Text style={styles.empty}>{t('library.empty')}</Text>
         )}
         {groups.map(([letter, items]) => (
           <View key={letter} style={styles.group}>
