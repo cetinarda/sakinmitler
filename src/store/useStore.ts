@@ -17,6 +17,9 @@ export interface UserProfile {
   name: string;
   fullName?: string;
   birthDate?: string;
+  birthHour?: number;
+  birthMinute?: number;
+  birthCity?: string;
   element?: 'ateş' | 'su' | 'toprak' | 'hava';
   createdAt: string;
   streak: number;
@@ -134,9 +137,20 @@ export function useMitlerStore() {
     setIsNewUser(false);
   }, [saveProfile]);
 
-  const updateBirthData = useCallback(async (fullName: string, birthDate: string) => {
+  const updateBirthData = useCallback(async (
+    fullName: string,
+    birthDate: string,
+    extras?: { birthHour?: number; birthMinute?: number; birthCity?: string },
+  ) => {
     if (!profile) return;
-    await saveProfile({ ...profile, fullName, birthDate });
+    await saveProfile({
+      ...profile,
+      fullName,
+      birthDate,
+      birthHour: extras?.birthHour,
+      birthMinute: extras?.birthMinute,
+      birthCity: extras?.birthCity,
+    });
   }, [profile, saveProfile]);
 
   const generateDailyReading = useCallback(async (
