@@ -6,6 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Linking,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
@@ -31,6 +33,15 @@ const BADGES = [
   { id: 'b005', titleKey: 'profile.badge.b005.title', descKey: 'profile.badge.b005.desc', emoji: '✦', required: 100 },
   { id: 'b006', titleKey: 'profile.badge.b006.title', descKey: 'profile.badge.b006.desc', emoji: '☀️', required: 365 },
 ] as const;
+
+function openExternal(url: string) {
+  if (!url) return;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    Linking.openURL(url).catch(() => {});
+  }
+}
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -715,6 +726,72 @@ export function ProfileScreen() {
         )}
       </View>
 
+      {/* Sakin Ailesi */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('family.title')}</Text>
+        <Text style={styles.familyIntro}>{t('family.intro')}</Text>
+
+        <TouchableOpacity
+          style={styles.familyMaster}
+          onPress={() => openExternal('https://sakin.life')}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.familyMasterSymbol}>✦</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.familyMasterName}>{t('family.master.name')}</Text>
+            <Text style={styles.familyMasterDesc}>{t('family.master.desc')}</Text>
+          </View>
+          <Text style={styles.familyMasterArrow}>→</Text>
+        </TouchableOpacity>
+
+        <View style={styles.familyGrid}>
+          {[
+            { key: 'hayvan',      symbol: '⊕', active: true,  current: false, url: 'https://sakinhayvan.netlify.app' },
+            { key: 'tas',         symbol: '◈', active: false, current: false, url: '' },
+            { key: 'bitki',       symbol: '✿', active: false, current: false, url: '' },
+            { key: 'mitler',      symbol: '⚡', active: true,  current: true,  url: '' },
+            { key: 'hd',          symbol: '◉', active: false, current: false, url: '' },
+            { key: 'numeroloji',  symbol: '◎', active: false, current: false, url: '' },
+          ].map(app => {
+            const name = t(`family.app.${app.key}.name` as any);
+            const desc = t(`family.app.${app.key}.desc` as any);
+            const isClickable = app.active && !app.current && !!app.url;
+            const Wrapper: any = isClickable ? TouchableOpacity : View;
+            return (
+              <Wrapper
+                key={app.key}
+                style={[styles.familyCard, app.active && styles.familyCardActive]}
+                {...(isClickable
+                  ? { onPress: () => openExternal(app.url), activeOpacity: 0.75 }
+                  : {})}
+              >
+                <Text style={[styles.familySymbol, app.active && { color: Colors.teal }]}>
+                  {app.symbol}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.familyName, app.active && { color: Colors.tealLight }]}>
+                    {name}
+                  </Text>
+                  <Text style={styles.familyDesc}>{desc}</Text>
+                </View>
+                {app.active ? (
+                  <View style={[styles.familyBadge, { borderColor: Colors.teal + '60' }]}>
+                    <Text style={[styles.familyBadgeText, { color: Colors.teal }]}>
+                      {t('family.badge.active')}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.familyBadge}>
+                    <Text style={styles.familyBadgeText}>{t('family.badge.soon')}</Text>
+                  </View>
+                )}
+                {isClickable && <Text style={styles.familyMasterArrow}>→</Text>}
+              </Wrapper>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Rozetler */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('profile.section.badges')}</Text>
@@ -1212,6 +1289,96 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     lineHeight: Typography.size.xs * 1.6,
   },
+
+  // Sakin Ailesi
+  familyIntro: {
+    fontSize: Typography.size.xs,
+    color: Colors.sakinLavender,
+    letterSpacing: 1.5,
+    fontStyle: 'italic',
+    marginTop: -Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  familyMaster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.sakinLavender + '12',
+    borderWidth: 1,
+    borderColor: Colors.sakinLavender + '55',
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+  familyMasterSymbol: {
+    fontSize: 22,
+    color: Colors.sakinLavender,
+    width: 28,
+    textAlign: 'center',
+  },
+  familyMasterName: {
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.semibold,
+    color: Colors.sakinLavender,
+    letterSpacing: 1,
+  },
+  familyMasterDesc: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  familyMasterArrow: {
+    fontSize: Typography.size.md,
+    color: Colors.sakinLavender,
+    opacity: 0.7,
+    marginLeft: Spacing.sm,
+  },
+  familyGrid: { gap: Spacing.sm },
+  familyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.sakinLavender + '25',
+    borderRadius: BorderRadius.md,
+  },
+  familyCardActive: {
+    borderColor: Colors.teal + '40',
+    backgroundColor: Colors.teal + '08',
+  },
+  familySymbol: {
+    fontSize: 20,
+    color: Colors.sakinLavender,
+    width: 28,
+    textAlign: 'center',
+  },
+  familyName: {
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.semibold,
+    color: Colors.textPrimary,
+    letterSpacing: 0.3,
+  },
+  familyDesc: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  familyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.sakinLavender + '50',
+    borderRadius: BorderRadius.round,
+  },
+  familyBadgeText: {
+    fontSize: 9,
+    color: Colors.sakinLavender,
+    letterSpacing: 1.5,
+    fontWeight: Typography.weight.semibold,
+  },
+
   badgeCard: {
     width: '30%', flex: 1, minWidth: 90,
     backgroundColor: Colors.backgroundCard,
