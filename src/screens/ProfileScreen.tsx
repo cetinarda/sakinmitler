@@ -10,9 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import { useMitlerStore } from '../store/useStore';
-import archetypesData from '../data/archetypes.json';
-import mythsData from '../data/myths.json';
-import imagesData from '../data/images.json';
+import { useData } from '../data/loader';
 import { useLanguage } from '../i18n/useLanguage';
 import { calcNumerology, LIFE_PATH_MEANINGS } from '../utils/numerology';
 import { getHDProfile } from '../utils/humanDesign';
@@ -37,6 +35,7 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitle } = useMitlerStore();
   const { lang, t, setLanguage } = useLanguage();
+  const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
 
   const [showOnboarding, setShowOnboarding] = useState(isNewUser);
   const [name, setName] = useState('');

@@ -13,9 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
-import archetypesData from '../data/archetypes.json';
-import mythsData from '../data/myths.json';
-import imagesData from '../data/images.json';
+import { useData, Archetype, Myth, ImageItem } from '../data/loader';
 import { MitlerDetailScreen, MitlerEntry, Kind } from './MitlerDetailScreen';
 import { calcLifePath } from '../utils/numerology';
 
@@ -27,9 +25,9 @@ interface Question { q: string; emoji: string; options: Option[] }
 type Mode = 'intro' | 'quiz' | 'birth' | 'result';
 
 interface FinderResult {
-  archetype: typeof archetypesData[0];
-  myth: typeof mythsData[0];
-  image: typeof imagesData[0];
+  archetype: Archetype;
+  myth: Myth;
+  image: ImageItem;
   reason: string;
 }
 
@@ -164,7 +162,12 @@ function scoreEntry<T extends { name: string; element?: string; keywords?: strin
   return best;
 }
 
-function findByQuiz(picks: Option[]): FinderResult {
+function findByQuiz(
+  picks: Option[],
+  archetypesData: Archetype[],
+  mythsData: Myth[],
+  imagesData: ImageItem[],
+): FinderResult {
   const traits: Record<string, number> = {};
   const elements: Record<string, number> = {};
   for (const p of picks) {
@@ -179,7 +182,13 @@ function findByQuiz(picks: Option[]): FinderResult {
   };
 }
 
-function findByBirth(day: number, month: number, year: number, hour?: number, city?: string): FinderResult {
+function findByBirth(
+  day: number, month: number, year: number,
+  hour: number | undefined, city: string | undefined,
+  archetypesData: Archetype[],
+  mythsData: Myth[],
+  imagesData: ImageItem[],
+): FinderResult {
   const traits: Record<string, number> = {};
   const elements: Record<string, number> = {};
 
@@ -257,6 +266,7 @@ interface Props {
 
 export function MitlerFinderScreen({ onClose, prefillBirthDate, embedded }: Props) {
   const insets = useSafeAreaInsets();
+  const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
   const [mode, setMode]     = useState<Mode>('intro');
   const [qIndex, setQIndex] = useState(0);
   const [picks, setPicks]   = useState<Option[]>([]);
@@ -297,7 +307,7 @@ export function MitlerFinderScreen({ onClose, prefillBirthDate, embedded }: Prop
         });
       } else {
         Animated.timing(cardFade, { toValue: 0, duration: 280, useNativeDriver: true }).start(() => {
-          showResult(findByQuiz(newPicks));
+          showResult(findByQuiz(newPicks, archetypesData, mythsData, imagesData));
         });
       }
     }, 350);
@@ -307,7 +317,7 @@ export function MitlerFinderScreen({ onClose, prefillBirthDate, embedded }: Prop
     if (!birthValid) return;
     const d = parseInt(bDay), m = parseInt(bMonth), y = parseInt(bYear);
     const h = bHour.trim() !== '' ? Math.min(Math.max(parseInt(bHour), 0), 23) : undefined;
-    showResult(findByBirth(d, m, y, h, bCity));
+    showResult(findByBirth(d, m, y, h, bCity, archetypesData, mythsData, imagesData));
   };
 
   const showResult = (r: FinderResult) => {
@@ -317,17 +327,17 @@ export function MitlerFinderScreen({ onClose, prefillBirthDate, embedded }: Prop
     Animated.timing(resultFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
   };
 
-  const openArchetype = (a: typeof archetypesData[0]) =>
+  const openArchetype = (a: Archetype) =>
     setOpenDetail({
       kind: 'archetype', id: a.id, name: a.name, emoji: a.emoji,
       tagline: '', detailMeta: `${a.tradition} · ${a.category}`, searchBlob: '', data: a,
     });
-  const openMyth = (m: typeof mythsData[0]) =>
+  const openMyth = (m: Myth) =>
     setOpenDetail({
       kind: 'myth', id: m.id, name: m.name, emoji: m.emoji,
       tagline: '', detailMeta: `${m.culture} · ${m.era}`, searchBlob: '', data: m,
     });
-  const openImage = (i: typeof imagesData[0]) =>
+  const openImage = (i: ImageItem) =>
     setOpenDetail({
       kind: 'image', id: i.id, name: i.name, emoji: i.emoji,
       tagline: '', detailMeta: `${i.tradition} · ${i.category}`, searchBlob: '', data: i,

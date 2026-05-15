@@ -2,9 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
-import archetypesData from '../data/archetypes.json';
-import mythsData from '../data/myths.json';
-import imagesData from '../data/images.json';
+import { useData, Archetype, Myth, ImageItem } from '../data/loader';
 import { useMitlerStore } from '../store/useStore';
 import { calcLifePath } from '../utils/numerology';
 import { calcHDType } from '../utils/humanDesign';
@@ -16,7 +14,11 @@ function weekIndex(): number {
   return Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7));
 }
 
-function getWeekly() {
+function getWeekly(
+  archetypesData: any[],
+  mythsData: any[],
+  imagesData: any[],
+) {
   const w = weekIndex();
   return {
     archetype: archetypesData[w % archetypesData.length],
@@ -32,8 +34,8 @@ function getDaysRemaining(): number {
   return daysToMonday;
 }
 
-function getPersonal(birthDate: string): {
-  archetype: typeof archetypesData[0];
+function getPersonal(birthDate: string, archetypesData: any[]): {
+  archetype: any;
   lifePath: number;
   hdType: string;
   reason: string;
@@ -60,30 +62,34 @@ function getPersonal(birthDate: string): {
 export function WeeklyScreen({ onClose, embedded }: Props) {
   const insets = useSafeAreaInsets();
   const { profile } = useMitlerStore();
-  const [weekly] = useState(() => getWeekly());
+  const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
+  const weekly = useMemo(
+    () => getWeekly(archetypesData as any, mythsData as any, imagesData as any),
+    [archetypesData, mythsData, imagesData],
+  );
   const daysLeft = getDaysRemaining();
   const [openDetail, setOpenDetail] = useState<MitlerEntry | null>(null);
 
   const personal = useMemo(() => {
     if (!profile?.birthDate) return null;
     try {
-      return getPersonal(profile.birthDate);
+      return getPersonal(profile.birthDate, archetypesData as any);
     } catch {
       return null;
     }
-  }, [profile?.birthDate]);
+  }, [profile?.birthDate, archetypesData]);
 
-  const openArchetype = (a: typeof archetypesData[0]) =>
+  const openArchetype = (a: Archetype) =>
     setOpenDetail({
       kind: 'archetype', id: a.id, name: a.name, emoji: a.emoji,
       tagline: '', detailMeta: `${a.tradition} · ${a.category}`, searchBlob: '', data: a,
     });
-  const openMyth = (m: typeof mythsData[0]) =>
+  const openMyth = (m: Myth) =>
     setOpenDetail({
       kind: 'myth', id: m.id, name: m.name, emoji: m.emoji,
       tagline: '', detailMeta: `${m.culture} · ${m.era}`, searchBlob: '', data: m,
     });
-  const openImage = (i: typeof imagesData[0]) =>
+  const openImage = (i: ImageItem) =>
     setOpenDetail({
       kind: 'image', id: i.id, name: i.name, emoji: i.emoji,
       tagline: '', detailMeta: `${i.tradition} · ${i.category}`, searchBlob: '', data: i,

@@ -10,9 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import { useMitlerStore } from '../store/useStore';
 
-import archetypesData from '../data/archetypes.json';
-import mythsData from '../data/myths.json';
-import imagesData from '../data/images.json';
+import { useData } from '../data/loader';
 
 type FilterType = 'all' | 'archetype' | 'myth' | 'image';
 
@@ -26,6 +24,7 @@ const FILTERS: { key: FilterType; label: string; color: string }[] = [
 export function ArchiveScreen() {
   const insets = useSafeAreaInsets();
   const { archive, stats, getTopStat } = useMitlerStore();
+  const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
   const [filter, setFilter] = useState<FilterType>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
 
