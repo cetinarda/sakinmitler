@@ -329,6 +329,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     gap: 6,
     marginBottom: Spacing.md,
+    alignItems: 'center',
   },
   filterBtn: {
     paddingHorizontal: Spacing.md,
@@ -336,8 +337,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.round,
     backgroundColor: Colors.backgroundSecondary,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'transparent',
+    minWidth: 76,
+    height: 30,
   },
   filterBtnActive: {
     borderColor: Colors.teal,
