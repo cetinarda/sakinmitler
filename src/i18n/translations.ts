@@ -249,6 +249,26 @@ export const TR = {
   'profile.level.5': 'Mit Bilgesi',
   'profile.level.6': 'Arketip Ustası',
   'profile.level.7': 'Sembol Pîri',
+
+  // Sakin Ailesi
+  'family.title': 'Sakin Ailesi',
+  'family.intro': 'Tek ekosistem. Tek abonelik. Birçok kapı.',
+  'family.master.name': 'sakin.life',
+  'family.master.desc': 'Ana merkez — tüm uygulamalara giriş',
+  'family.app.hayvan.name': 'Hayvan Rehberliği',
+  'family.app.hayvan.desc': 'Anadolu\'dan dünyaya totemler',
+  'family.app.tas.name': 'Taş Rehberliği',
+  'family.app.tas.desc': 'Kristallerin dili',
+  'family.app.bitki.name': 'Bitki Rehberliği',
+  'family.app.bitki.desc': 'Bitkisel bilgelik',
+  'family.app.mitler.name': 'Mitler ve İmgeler',
+  'family.app.mitler.desc': 'Bu uygulama',
+  'family.app.hd.name': 'Human Design',
+  'family.app.hd.desc': 'Tasarımını tanı',
+  'family.app.numeroloji.name': 'Numeroloji',
+  'family.app.numeroloji.desc': 'Sayıların ardındaki sen',
+  'family.badge.active': 'AKTİF',
+  'family.badge.soon': 'YAKINDA',
 } as const;
 
 export const EN: Record<keyof typeof TR, string> = {
@@ -498,6 +518,26 @@ export const EN: Record<keyof typeof TR, string> = {
   'profile.level.5': 'Myth Sage',
   'profile.level.6': 'Archetype Master',
   'profile.level.7': 'Symbol Elder',
+
+  // Sakin Ailesi (EN)
+  'family.title': 'Sakin Family',
+  'family.intro': 'One ecosystem. One subscription. Many doors.',
+  'family.master.name': 'sakin.life',
+  'family.master.desc': 'The hub — entry to all apps',
+  'family.app.hayvan.name': 'Animal Guide',
+  'family.app.hayvan.desc': 'Totems from Anatolia to the world',
+  'family.app.tas.name': 'Stone Guide',
+  'family.app.tas.desc': 'The language of crystals',
+  'family.app.bitki.name': 'Plant Guide',
+  'family.app.bitki.desc': 'Plant wisdom',
+  'family.app.mitler.name': 'Myths and Symbols',
+  'family.app.mitler.desc': 'This app',
+  'family.app.hd.name': 'Human Design',
+  'family.app.hd.desc': 'Know your design',
+  'family.app.numeroloji.name': 'Numerology',
+  'family.app.numeroloji.desc': 'The you behind the numbers',
+  'family.badge.active': 'ACTIVE',
+  'family.badge.soon': 'COMING SOON',
 };
 
 export const DICTIONARY: Record<Lang, Record<string, string>> = {
