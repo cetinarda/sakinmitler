@@ -20,7 +20,7 @@ import { MitlerDetailScreen, MitlerEntry } from './MitlerDetailScreen';
 
 const ELEMENTS = ['ateş', 'su', 'toprak', 'hava'] as const;
 const ELEMENT_EMOJIS: Record<string, string> = {
-  ateş: '🔥', su: '💧', toprak: '🌿', hava: '🌬️'
+  ateş: '△', su: '▽', toprak: '⊕', hava: '○'
 };
 
 const BADGES = [
@@ -310,7 +310,7 @@ export function ProfileScreen() {
           <Text style={styles.statLabel}>{t('profile.stat.totalReadings')}</Text>
         </View>
         <View style={[styles.statBox, styles.statBoxCenter]}>
-          <Text style={[styles.statValue, { color: Colors.ember }]}>🔥 {streak}</Text>
+          <Text style={[styles.statValue, { color: Colors.ember }]}>△ {streak}</Text>
           <Text style={styles.statLabel}>{t('profile.stat.streak')}</Text>
         </View>
         <View style={styles.statBox}>
