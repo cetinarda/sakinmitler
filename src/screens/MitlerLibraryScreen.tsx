@@ -214,6 +214,7 @@ export function MitlerLibraryScreen({ onClose, embedded }: Props) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
         contentContainerStyle={styles.filterRow}
       >
         {FILTERS.map(f => {
@@ -325,15 +326,19 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   clearBtn: { fontSize: Typography.size.sm, color: Colors.textMuted, paddingHorizontal: Spacing.xs },
+  filterScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: Spacing.md,
+  },
   filterRow: {
     paddingHorizontal: Spacing.lg,
     gap: 6,
-    marginBottom: Spacing.md,
     alignItems: 'center',
   },
   filterBtn: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: BorderRadius.round,
     backgroundColor: Colors.backgroundSecondary,
     alignItems: 'center',
@@ -341,14 +346,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
     minWidth: 76,
-    height: 30,
   },
   filterBtnActive: {
     borderColor: Colors.teal,
     backgroundColor: Colors.teal + '15',
   },
   filterLabel: {
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 14,
     letterSpacing: 0.5,
     fontWeight: Typography.weight.medium,
   },
