@@ -47,6 +47,8 @@ const STORAGE_KEYS = {
   DAILY: '@mitler_daily',
   ARCHIVE: '@mitler_archive',
   STATS: '@mitler_stats',
+  DISCLAIMER: '@mitler_disclaimer_v1',
+  LANG: '@mitler_lang',
 };
 
 const todayStr = () => new Date().toISOString().split('T')[0];
@@ -67,6 +69,7 @@ export function useMitlerStore() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -74,12 +77,15 @@ export function useMitlerStore() {
 
   const loadAll = async () => {
     try {
-      const [profileRaw, dailyRaw, archiveRaw, statsRaw] = await Promise.all([
+      const [profileRaw, dailyRaw, archiveRaw, statsRaw, disclaimerRaw] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.PROFILE),
         AsyncStorage.getItem(STORAGE_KEYS.DAILY),
         AsyncStorage.getItem(STORAGE_KEYS.ARCHIVE),
         AsyncStorage.getItem(STORAGE_KEYS.STATS),
+        AsyncStorage.getItem(STORAGE_KEYS.DISCLAIMER),
       ]);
+
+      if (disclaimerRaw === 'accepted') setDisclaimerAccepted(true);
 
       if (!profileRaw) {
         setIsNewUser(true);
@@ -224,6 +230,30 @@ export function useMitlerStore() {
     return entries.reduce((a, b) => a[1] > b[1] ? a : b)[0];
   }, []);
 
+  const acceptDisclaimer = useCallback(async () => {
+    setDisclaimerAccepted(true);
+    await AsyncStorage.setItem(STORAGE_KEYS.DISCLAIMER, 'accepted');
+  }, []);
+
+  const clearAllData = useCallback(async () => {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.PROFILE,
+      STORAGE_KEYS.DAILY,
+      STORAGE_KEYS.ARCHIVE,
+      STORAGE_KEYS.STATS,
+    ]);
+    setProfile(null);
+    setDailyReading(null);
+    setArchive([]);
+    setStats({
+      archetypeCounts: {},
+      mythCounts: {},
+      imageCounts: {},
+      traditionCounts: {},
+    });
+    setIsNewUser(true);
+  }, []);
+
   // Returns the translation key for the level title; the consumer translates.
   const getLevelTitleKey = useCallback((level: number): string => {
     const idx = Math.min(Math.max(level, 1), 7);
@@ -242,6 +272,7 @@ export function useMitlerStore() {
     stats,
     isLoading,
     isNewUser,
+    disclaimerAccepted,
     createProfile,
     saveProfile,
     updateBirthData,
@@ -251,5 +282,7 @@ export function useMitlerStore() {
     getLevelTitle,
     getLevelTitleKey,
     todayStr,
+    acceptDisclaimer,
+    clearAllData,
   };
 }

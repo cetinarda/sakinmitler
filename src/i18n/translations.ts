@@ -250,9 +250,30 @@ export const TR = {
   'profile.level.6': 'Arketip Ustası',
   'profile.level.7': 'Sembol Pîri',
 
+  // Disclaimer (entertainment & wellbeing)
+  'disclaimer.title': 'Yansıtma Rehberi',
+  'disclaimer.body':
+    'Sakin Mitler arketipler, mitler ve sembollerle çalışan bir yansıtma ve günlük tutma rehberidir. İçerik psikolojik, medikal veya kehanet tavsiyesi değildir; yalnızca öz-keşif amaçlıdır. Bir zorluk yaşıyorsan profesyonel destek almayı düşünebilirsin.',
+  'disclaimer.accept': 'Anladım, devam et ✦',
+  'disclaimer.footer': 'Yansıtma amaçlıdır · tavsiye değildir',
+
+  // Profil — veri silme
+  'profile.deleteData.section': 'Veri ve Gizlilik',
+  'profile.deleteData.button': 'Profilimi ve Verilerimi Sil',
+  'profile.deleteData.note': 'Tüm veriler bu cihazda saklanır. Silindiğinde geri alınamaz.',
+  'profile.deleteData.confirmTitle': 'Tüm Veriler Silinecek',
+  'profile.deleteData.confirmBody':
+    'Profilin, arşivin, silsilen ve istatistiklerin tamamen silinecek. Bu işlem geri alınamaz.',
+  'profile.deleteData.confirm': 'Evet, Sil',
+  'profile.deleteData.cancel': 'Vazgeç',
+  'profile.attribution':
+    'Carl Jung, Joseph Campbell, Caroline Myss, Carol Pearson ve Moore & Gillette\'in çalışmalarından ilham alır. Yalnızca öz-yansıtma amaçlıdır.',
+  'profile.privacyLinks': 'Gizlilik · Şartlar',
+
   // Sakin Ailesi
   'family.title': 'Sakin Ailesi',
-  'family.intro': 'Tek ekosistem. Tek abonelik. Birçok kapı.',
+  'family.intro': 'Tek ekosistem. Birçok kapı.',
+  'family.webBadge': 'WEB',
   'family.master.name': 'sakin.life',
   'family.master.desc': 'Ana merkez — tüm uygulamalara giriş',
   'family.app.hayvan.name': 'Hayvan Rehberliği',
@@ -519,9 +540,30 @@ export const EN: Record<keyof typeof TR, string> = {
   'profile.level.6': 'Archetype Master',
   'profile.level.7': 'Symbol Elder',
 
+  // Disclaimer (entertainment & wellbeing) — EN
+  'disclaimer.title': 'A Mirror, Not a Prescription',
+  'disclaimer.body':
+    'Sakin Myths is a reflection and journaling companion using archetypes, myths and symbols. The content is not psychological, medical or predictive advice — it is for self-exploration only. If you are struggling, please consider seeking professional support.',
+  'disclaimer.accept': 'I understand, continue ✦',
+  'disclaimer.footer': 'For self-reflection · not advice',
+
+  // Profile — data deletion
+  'profile.deleteData.section': 'Data & Privacy',
+  'profile.deleteData.button': 'Delete My Profile & Data',
+  'profile.deleteData.note': 'All data is stored on this device. Deletion is permanent.',
+  'profile.deleteData.confirmTitle': 'All Data Will Be Deleted',
+  'profile.deleteData.confirmBody':
+    'Your profile, archive, streak and statistics will be completely erased. This action cannot be undone.',
+  'profile.deleteData.confirm': 'Yes, delete',
+  'profile.deleteData.cancel': 'Cancel',
+  'profile.attribution':
+    'Inspired by the work of Carl Jung, Joseph Campbell, Caroline Myss, Carol Pearson, and Moore & Gillette. For self-reflection only.',
+  'profile.privacyLinks': 'Privacy · Terms',
+
   // Sakin Ailesi (EN)
   'family.title': 'Sakin Family',
-  'family.intro': 'One ecosystem. One subscription. Many doors.',
+  'family.intro': 'One ecosystem. Many doors.',
+  'family.webBadge': 'WEB',
   'family.master.name': 'sakin.life',
   'family.master.desc': 'The hub — entry to all apps',
   'family.app.hayvan.name': 'Animal Guide',

@@ -8,6 +8,7 @@ import {
   TextInput,
   Linking,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
@@ -45,7 +46,7 @@ function openExternal(url: string) {
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitleKey } = useMitlerStore();
+  const { profile, isNewUser, createProfile, updateBirthData, stats, getTopStat, getLevelTitleKey, clearAllData } = useMitlerStore();
   const { lang, t, setLanguage } = useLanguage();
   const { archetypes: archetypesData, myths: mythsData, images: imagesData } = useData();
 
@@ -164,6 +165,24 @@ export function ProfileScreen() {
     const city = editCity.trim() || undefined;
     await updateBirthData(editFullName.trim(), bd, { birthHour: hourNum, birthMinute: minNum, birthCity: city });
     setShowBirthForm(false);
+  };
+
+  const handleDeleteData = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const ok = window.confirm(`${t('profile.deleteData.confirmTitle')}\n\n${t('profile.deleteData.confirmBody')}`);
+      if (ok) { clearAllData(); setShowOnboarding(true); setStep(1); setName(''); }
+      return;
+    }
+    Alert.alert(
+      t('profile.deleteData.confirmTitle'),
+      t('profile.deleteData.confirmBody'),
+      [
+        { text: t('profile.deleteData.cancel'), style: 'cancel' },
+        { text: t('profile.deleteData.confirm'), style: 'destructive', onPress: () => {
+            clearAllData(); setShowOnboarding(true); setStep(1); setName('');
+        } },
+      ],
+    );
   };
 
   if (showOnboarding || isNewUser) {
@@ -726,6 +745,19 @@ export function ProfileScreen() {
         )}
       </View>
 
+      {/* Veri ve Gizlilik */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('profile.deleteData.section')}</Text>
+        <Text style={styles.deleteNote}>{t('profile.deleteData.note')}</Text>
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={handleDeleteData}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.deleteBtnText}>{t('profile.deleteData.button')}</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Sakin Ailesi */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('family.title')}</Text>
@@ -740,6 +772,11 @@ export function ProfileScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.familyMasterName}>{t('family.master.name')}</Text>
             <Text style={styles.familyMasterDesc}>{t('family.master.desc')}</Text>
+          </View>
+          <View style={[styles.familyBadge, styles.familyBadgeWeb]}>
+            <Text style={[styles.familyBadgeText, { color: Colors.textMuted }]}>
+              {t('family.webBadge')}
+            </Text>
           </View>
           <Text style={styles.familyMasterArrow}>→</Text>
         </TouchableOpacity>
@@ -774,6 +811,13 @@ export function ProfileScreen() {
                   </Text>
                   <Text style={styles.familyDesc}>{desc}</Text>
                 </View>
+                {isClickable && (
+                  <View style={[styles.familyBadge, styles.familyBadgeWeb]}>
+                    <Text style={[styles.familyBadgeText, { color: Colors.textMuted }]}>
+                      {t('family.webBadge')}
+                    </Text>
+                  </View>
+                )}
                 {app.active ? (
                   <View style={[styles.familyBadge, { borderColor: Colors.teal + '60' }]}>
                     <Text style={[styles.familyBadgeText, { color: Colors.teal }]}>
@@ -817,6 +861,14 @@ export function ProfileScreen() {
             );
           })}
         </View>
+      </View>
+
+      {/* Attribution & Privacy */}
+      <View style={styles.attributionWrap}>
+        <Text style={styles.attributionText}>{t('profile.attribution')}</Text>
+        <TouchableOpacity onPress={() => openExternal('https://sakin.life/privacy')} activeOpacity={0.7}>
+          <Text style={styles.privacyLink}>{t('profile.privacyLinks')}</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -1397,4 +1449,48 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   badgeDesc: { fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
+
+  deleteNote: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    lineHeight: 18,
+    marginBottom: Spacing.sm,
+  },
+  deleteBtn: {
+    borderWidth: 1,
+    borderColor: Colors.ember,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  deleteBtnText: {
+    color: Colors.ember,
+    fontSize: Typography.size.sm,
+    letterSpacing: 1,
+  },
+  familyBadgeWeb: {
+    borderColor: Colors.textMuted + '40',
+    backgroundColor: 'transparent',
+    marginRight: 4,
+  },
+  attributionWrap: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  attributionText: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 17,
+    fontWeight: Typography.weight.light,
+  },
+  privacyLink: {
+    fontSize: Typography.size.xs,
+    color: Colors.textMuted,
+    letterSpacing: 1.5,
+    textDecorationLine: 'underline',
+  },
 });

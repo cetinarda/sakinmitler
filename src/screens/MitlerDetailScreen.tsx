@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Share, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/colors';
 import archetypesData from '../data/archetypes.json';
@@ -48,6 +48,22 @@ export function MitlerDetailScreen({ entry, onClose }: Props) {
 
   const sections = buildSections(entry);
 
+  const handleShare = async () => {
+    const first = sections[0]?.body ?? '';
+    const message = `${entry.name} — ${KIND_LABEL[entry.kind]}\n\n${first}\n\nSakin Mitler`;
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).share) {
+        await (navigator as any).share({ title: entry.name, text: message });
+      } else if (Platform.OS !== 'web') {
+        await Share.share({ message, title: entry.name });
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(message);
+      }
+    } catch {
+      // user cancelled or share unavailable — silent
+    }
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -59,6 +75,14 @@ export function MitlerDetailScreen({ entry, onClose }: Props) {
             <Text style={[styles.back, { color: accent }]}>← Geri</Text>
           </TouchableOpacity>
           <Text style={styles.familyTag}>SAKİN · MİTLER</Text>
+          <TouchableOpacity
+            onPress={handleShare}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Paylaş"
+          >
+            <Text style={[styles.share, { color: accent }]}>↑ Paylaş</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.hero}>
@@ -87,6 +111,7 @@ export function MitlerDetailScreen({ entry, onClose }: Props) {
         ))}
 
         <View style={styles.footer}>
+          <Text style={styles.disclaimerFooter}>Yansıtma amaçlıdır · tavsiye değildir</Text>
           <Text style={styles.footerText}>SAKİN AİLESİ ✦</Text>
         </View>
       </ScrollView>
@@ -185,6 +210,7 @@ const styles = StyleSheet.create({
   },
   back: { fontSize: Typography.size.sm, letterSpacing: 0.5 },
   familyTag: { fontSize: 9, color: Colors.textMuted, letterSpacing: 2 },
+  share: { fontSize: Typography.size.sm, letterSpacing: 0.5 },
 
   hero: { alignItems: 'center', paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
   medallion: {
@@ -250,4 +276,12 @@ const styles = StyleSheet.create({
 
   footer: { paddingVertical: Spacing.xl, alignItems: 'center' },
   footerText: { fontSize: 9, color: Colors.textMuted, letterSpacing: 4 },
+  disclaimerFooter: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    letterSpacing: 1.5,
+    marginBottom: Spacing.sm,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
 });
